@@ -119,7 +119,7 @@
 
                 const isActive = (key === currentSessionId);
                 const item = document.createElement('div');
-                item.className = `flex items-center gap-3 p-3 rounded-lg cursor-pointer transition no-select border ${isActive ? 'bg-zinc-100 border-zinc-300' : 'hover:bg-zinc-100 border-transparent'}`;
+                item.className = `flex items-center gap-3 p-3 rounded-lg cursor-pointer transition no-select border ${isActive ? 'bg-zinc-100 border-zinc-300 shadow-sm' : 'hover:bg-zinc-100 border-transparent'}`;
                 item.onclick = () => loadSpecificSession(key);
                 item.innerHTML = `<i data-lucide="message-square" class="w-4 h-4 text-zinc-400 flex-shrink-0"></i><div class="flex-1 overflow-hidden"><div class="font-semibold text-black truncate">${firstMsg}</div><div class="text-xs text-zinc-500 mt-0.5">${date}</div></div>`;
                 list.appendChild(item);
@@ -174,7 +174,6 @@
             const input = document.getElementById('user-input'); const chatBox = document.getElementById('chat-box'); const welcomeBox = document.getElementById('welcome-box'); const message = input.value.trim();
             if (!message && !attachedFile) return; input.value = '';
             
-            // Hide mobile keyboard after sending to reclaim screen space
             input.blur();
 
             const currentImgData = attachedFile ? document.getElementById('preview-img').src : null;
