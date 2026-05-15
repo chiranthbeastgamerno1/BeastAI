@@ -4,13 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Beast AI</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
-        /* Imported Outfit for the Gemini-style text, Playfair for the logo */
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Outfit:wght@300;400;500;600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap');
         
-        body { background-color: #fafafa; color: #18181b; overflow-x: hidden; font-family: 'Outfit', sans-serif; }
+        body { background-color: #fafafa; color: #18181b; overflow-x: hidden; font-family: 'Inter', sans-serif; }
         .font-playfair { font-family: 'Playfair Display', serif; }
         .no-select { -webkit-user-select: none; user-select: none; }
         
@@ -26,8 +26,8 @@
         
         #sidebar { transition: transform 0.3s ease-in-out; }
         
-        /* Forces the text to be perfectly smooth */
-        .gemini-text { font-family: 'Outfit', sans-serif; letter-spacing: 0.01em; -webkit-font-smoothing: antialiased; }
+        /* Modern UI Anti-aliasing */
+        .gemini-text { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
     </style>
 </head>
 <body class="bg-zinc-50 text-zinc-900 selection:bg-black selection:text-white flex h-screen overflow-hidden">
@@ -41,7 +41,7 @@
             <i data-lucide="plus-circle" class="w-5 h-5"></i> New Session
         </button>
         <nav id="history-list" class="flex-1 space-y-2 overflow-y-auto pr-2 text-sm text-zinc-700 custom-scrollbar gemini-text"></nav>
-        <div class="border-t border-zinc-200 pt-4 mt-auto text-center text-xs text-zinc-400 font-bold tracking-widest uppercase gemini-text">BEAST CORE v4.2</div>
+        <div class="border-t border-zinc-200 pt-4 mt-auto text-center text-xs text-zinc-400 font-bold tracking-widest uppercase gemini-text">BEAST CORE v4.5</div>
     </aside>
 
     <div class="flex-1 flex flex-col h-full w-full relative min-w-0">
@@ -94,7 +94,7 @@
                 <div class="relative flex items-end w-full">
                     <button type="button" onclick="document.getElementById('file-input').click()" class="absolute left-2 bottom-2 p-3 text-zinc-400 hover:text-black transition-colors z-10"><i data-lucide="paperclip" class="w-5 h-5"></i></button>
                     <input type="file" id="file-input" class="hidden" accept="image/*" onchange="handleFile(this)">
-                    <textarea id="user-input" rows="1" class="w-full bg-zinc-50 border-2 border-zinc-200 focus:border-black focus:ring-0 transition-colors p-4 pl-14 pr-16 resize-none outline-none gemini-text text-lg text-black placeholder:text-zinc-400 custom-scrollbar min-h-[64px] max-h-40" placeholder="Speak to the Beast..." onkeydown="handleEnter(event)"></textarea>
+                    <textarea id="user-input" rows="1" class="w-full bg-zinc-50 border-2 border-zinc-200 focus:border-black focus:ring-0 transition-colors p-4 pl-14 pr-16 resize-none outline-none gemini-text text-[15px] font-medium text-black placeholder:text-zinc-400 custom-scrollbar min-h-[64px] max-h-40" placeholder="Speak to the Beast..." onkeydown="handleEnter(event)"></textarea>
                     <button onclick="sendMessage()" id="send-btn" class="absolute right-2 bottom-2 p-3 bg-black text-white hover:bg-zinc-800 disabled:bg-zinc-300 disabled:text-zinc-500 transition-colors z-10"><i data-lucide="send" class="w-5 h-5"></i></button>
                 </div>
             </div>
@@ -215,16 +215,21 @@
             } else if (mode === 'error') {
                 content = `<div class="text-red-900 bg-red-50 p-4 border border-red-900 font-semibold rounded">${message}</div>`;
             } else {
-                // Renders the AI response in the incredibly clean, smooth text
-                content = `<span class="gemini-text text-[15px] leading-relaxed text-zinc-800">${message.replace(/\n/g, '<br>')}</span>`;
+                // BUGFIX: Renders the text through marked.js to create bold text, lists, and code blocks like Gemini!
+                content = `<div class="prose prose-zinc max-w-none prose-p:leading-relaxed prose-pre:bg-zinc-900 prose-pre:text-zinc-100 gemini-text">${marked.parse(message)}</div>`;
             }
 
             let html = `
             <div class="flex flex-col items-start w-full max-w-prose gemini-text">
                 <div class="flex items-center gap-2 mb-2 text-black"><i data-lucide="sparkles" class="w-4 h-4"></i><span class="text-xs uppercase tracking-widest font-bold">Beast</span></div>
-                <div class="bg-white border border-zinc-200 p-6 sm:p-8 shadow-sm w-full leading-loose text-zinc-900 whitespace-pre-wrap rounded-2xl rounded-tl-sm">${content}</div>
+                <div class="bg-white border border-zinc-200 p-6 sm:p-8 shadow-sm w-full leading-loose text-zinc-900 rounded-2xl rounded-tl-sm">${content}</div>
             </div>`;
             document.getElementById('chat-box').insertAdjacentHTML('beforeend', html); lucide.createIcons();
+            
+            // Format any code blocks that were just rendered
+            document.querySelectorAll('pre code').forEach((block) => {
+                block.parentElement.classList.add('p-4', 'rounded-lg', 'overflow-x-auto');
+            });
         }
 
         function handleFile(input) { if (input.files && input.files[0]) { attachedFile = input.files[0]; const reader = new FileReader(); reader.onload = e => { document.getElementById('preview-img').src = e.target.result; document.getElementById('attachment-preview').classList.replace('hidden', 'inline-block'); }; reader.readAsDataURL(attachedFile); } }
