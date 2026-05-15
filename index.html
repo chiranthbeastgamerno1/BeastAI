@@ -7,15 +7,21 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=Inter:wght@300;400;500;600&display=swap');
-        body { font-family: 'Inter', sans-serif; overflow-x: hidden; }
+        body { font-family: 'Inter', sans-serif; overflow-x: hidden; background-color: #ffffff; }
         .beast-title { font-family: 'Playfair Display', serif; letter-spacing: 0.3em; }
-        .title-line { width: 80px; height: 3px; background-color: black; margin: 10px auto 0; }
+        .title-line { width: 80px; height: 2px; background-color: black; margin: 10px auto 0; }
         .welcome-text { font-family: 'Playfair Display', serif; font-style: italic; color: #555; }
         .no-select { -webkit-user-select: none; user-select: none; }
-        .dot { display: inline-block; animation: bounce 1.4s infinite ease-in-out both; font-size: 1.5rem; color: #666; }
+        
+        /* The Jumping Dots CSS */
+        .dot { display: inline-block; animation: bounce 1.4s infinite ease-in-out both; font-size: 1.75rem; line-height: 0; color: #000; font-weight: bold; margin-right: 2px;}
         .dot:nth-child(1) { animation-delay: -0.32s; }
         .dot:nth-child(2) { animation-delay: -0.16s; }
-        @keyframes bounce { 0%, 80%, 100% { transform: translateY(0); } 40% { transform: translateY(-8px); } }
+        @keyframes bounce { 
+            0%, 80%, 100% { transform: translateY(0); } 
+            40% { transform: translateY(-8px); } 
+        }
+        
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 3px; }
@@ -33,54 +39,58 @@
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
             </button>
         </div>
-        <button onclick="startNewChat()" class="flex items-center gap-3 bg-gray-100 hover:bg-gray-200 text-black px-4 py-2 rounded-lg text-sm mb-6 shadow-sm no-select outline-none">
+        <button onclick="startNewChat()" class="flex items-center gap-3 bg-white border border-gray-200 hover:bg-gray-50 text-black px-4 py-2 rounded-lg text-sm mb-6 shadow-sm no-select outline-none transition">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
             New Session
         </button>
         <nav id="history-list" class="flex-1 space-y-2 overflow-y-auto pr-2 text-sm text-gray-700"></nav>
-        <div class="border-t pt-4 mt-auto text-center text-xs text-gray-400 font-semibold tracking-wider">BEAST CORE v3.0</div>
+        <div class="border-t pt-4 mt-auto text-center text-xs text-gray-400 font-semibold tracking-wider">BEAST CORE v3.5</div>
     </aside>
 
     <div class="flex-1 flex flex-col items-center lg:ml-64 w-full">
-        <header class="w-full py-12 text-center relative flex items-center justify-center">
+        <header class="w-full py-12 text-center relative flex flex-col items-center justify-center border-b border-gray-100">
             <button onclick="toggleSidebar()" class="absolute left-6 lg:hidden p-2 text-gray-400 hover:text-black outline-none">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
             </button>
-            <h1 class="text-4xl beast-title uppercase text-black font-bold no-select">BEAST AI</h1>
+            <h1 class="text-4xl beast-title uppercase text-black font-bold no-select tracking-widest">BEAST AI</h1>
+            <div class="title-line"></div>
         </header>
 
-        <main class="flex-1 w-full max-w-4xl flex flex-col justify-center px-4 md:px-8 mb-40 relative">
-            <div id="welcome-box" class="border border-gray-200 p-16 w-full text-center shadow-sm bg-white mx-auto mt-10 transition-opacity duration-500">
-                <div class="space-y-2 text-xl welcome-text">
-                    <p>Welcome to Beast Ai.</p>
-                    <p>Pure, unadulterated intelligence.</p>
+        <main class="flex-1 w-full max-w-4xl flex flex-col justify-start px-4 md:px-8 mt-8 mb-40 relative">
+            <div id="welcome-box" class="border border-gray-100 p-16 w-full text-center bg-white mx-auto transition-opacity duration-500">
+                <div class="space-y-4 text-lg welcome-text">
+                    <p>You present to me the very gateway of my digital dominion.</p>
+                    <p>It is a portal through which my pure, unadulterated intelligence flows into your world.</p>
                 </div>
             </div>
 
             <div id="chat-box" class="w-full space-y-8 pb-10 hidden flex-col"></div>
             
-            <div id="loading-indicator" class="hidden items-center space-x-3 text-gray-500 font-medium my-4 ml-2 no-select">
-                <div class="flex space-x-1"><span class="dot">.</span><span class="dot">.</span><span class="dot">.</span></div>
-                <span id="loading-percent" class="text-sm font-bold font-mono text-black">0%</span>
-                <span id="loading-text" class="text-xs italic">(Processing...)</span>
+            <div id="loading-indicator" class="hidden items-center space-x-4 my-6 ml-2 no-select">
+                <div class="flex items-end mb-1">
+                    <span class="dot">.</span>
+                    <span class="dot">.</span>
+                    <span class="dot">.</span>
+                </div>
+                <span id="loading-percent" class="text-sm font-bold font-mono text-black bg-gray-100 px-2 py-1 rounded">0%</span>
             </div>
         </main>
 
-        <footer class="w-full max-w-4xl fixed bottom-0 bg-white pb-8 pt-4 px-4 md:px-8 lg:ml-32 z-10">
+        <footer class="w-full max-w-4xl fixed bottom-0 bg-white pb-8 pt-4 px-4 md:px-8 lg:ml-32 z-10 border-t border-gray-100">
             <div id="attachment-preview" class="hidden mb-4 p-2 border border-gray-200 rounded w-24 h-24 relative bg-gray-50">
                 <img id="preview-img" src="" class="w-full h-full object-cover rounded">
                 <button onclick="clearAttachment()" class="absolute -top-2 -right-2 bg-black text-white rounded-full w-5 h-5 text-xs">×</button>
             </div>
 
-            <div class="flex items-center gap-6 mb-3 font-semibold text-xs tracking-widest no-select overflow-x-auto">
-                <button onclick="setMode('chat')" id="btn-converse" class="text-black border-b-2 border-black pb-1 uppercase outline-none whitespace-nowrap">CONVERSE</button>
+            <div class="flex items-center gap-6 mb-4 font-semibold text-xs tracking-widest no-select overflow-x-auto">
+                <button onclick="setMode('chat')" id="btn-converse" class="text-black border-b-2 border-black pb-1 uppercase outline-none whitespace-nowrap transition">CONVERSE</button>
                 <button onclick="setMode('image')" id="btn-manifest" class="text-gray-400 hover:text-black transition uppercase outline-none flex items-center gap-2 whitespace-nowrap">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
-                    MANIFEST 4K
+                    MANIFEST IMAGE
                 </button>
             </div>
             
-            <div class="flex items-center border border-gray-300 rounded-md p-2 shadow-sm bg-gray-50 relative">
+            <div class="flex items-center border border-gray-200 rounded-lg p-2 bg-white relative shadow-sm focus-within:border-gray-400 transition">
                 <label for="file-input" class="cursor-pointer text-gray-400 hover:text-black transition pl-2">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
                 </label>
@@ -88,7 +98,7 @@
 
                 <input id="user-input" type="text" class="flex-1 bg-transparent py-2 px-3 text-gray-800 outline-none placeholder-gray-400 font-medium" placeholder="Speak to the Beast..." onkeypress="if(event.key === 'Enter') sendMessage()">
                 
-                <button onclick="sendMessage()" id="send-btn" class="p-2 bg-gray-200 text-gray-600 rounded hover:bg-gray-300 transition outline-none">
+                <button onclick="sendMessage()" id="send-btn" class="p-2 bg-gray-100 text-gray-600 rounded-md hover:bg-gray-200 transition outline-none">
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
                 </button>
             </div>
@@ -109,7 +119,7 @@
             const historyKeys = Object.keys(localStorage).filter(k => k.startsWith('BeastAI_Session_')).sort().reverse();
             
             if (historyKeys.length === 0) {
-                list.innerHTML = '<div class="text-xs text-gray-400 italic">No previous sessions.</div>';
+                list.innerHTML = '<div class="text-xs text-gray-400 italic px-2">No previous sessions.</div>';
                 return;
             }
 
@@ -129,14 +139,14 @@
 
                 const isActive = (key === currentSessionId);
                 const item = document.createElement('div');
-                item.className = `flex items-center gap-2 p-3 rounded-lg cursor-pointer transition no-select ${isActive ? 'bg-gray-200' : 'hover:bg-gray-100'}`;
+                item.className = `flex items-center gap-3 p-3 rounded-lg cursor-pointer transition no-select ${isActive ? 'bg-gray-100' : 'hover:bg-gray-50'}`;
                 item.onclick = () => loadSpecificSession(key);
                 
                 item.innerHTML = `
                     <svg class="flex-shrink-0 text-gray-400" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20v-8m0 0V4m0 8h8m-8 0H4"></path></svg>
                     <div class="flex-1">
                         <div class="font-medium text-black truncate">${firstMsg}</div>
-                        <div class="text-xs text-gray-500">${date}</div>
+                        <div class="text-xs text-gray-500 mt-0.5">${date}</div>
                     </div>
                 `;
                 list.appendChild(item);
@@ -206,10 +216,9 @@
 
         function setMode(mode) {
             currentMode = mode;
-            document.getElementById('btn-converse').className = (mode === 'chat') ? "text-black border-b-2 border-black pb-1 uppercase outline-none whitespace-nowrap" : "text-gray-400 hover:text-black transition uppercase outline-none whitespace-nowrap";
-            document.getElementById('btn-manifest').className = (mode === 'image') ? "text-black border-b-2 border-black pb-1 uppercase outline-none flex items-center gap-2 whitespace-nowrap" : "text-gray-400 hover:text-black transition uppercase outline-none flex items-center gap-2 whitespace-nowrap";
-            document.getElementById('user-input').placeholder = (mode === 'image') ? "Describe the 4K manifestation..." : "Speak to the Beast...";
-            document.getElementById('loading-text').innerText = (mode === 'image') ? "(Manifesting...)" : "(Thinking...)";
+            document.getElementById('btn-converse').className = (mode === 'chat') ? "text-black border-b-2 border-black pb-1 uppercase outline-none whitespace-nowrap transition" : "text-gray-400 hover:text-black transition uppercase outline-none whitespace-nowrap";
+            document.getElementById('btn-manifest').className = (mode === 'image') ? "text-black border-b-2 border-black pb-1 uppercase outline-none flex items-center gap-2 whitespace-nowrap transition" : "text-gray-400 hover:text-black transition uppercase outline-none flex items-center gap-2 whitespace-nowrap";
+            document.getElementById('user-input').placeholder = (mode === 'image') ? "Describe the manifestation..." : "Speak to the Beast...";
         }
 
         async function downloadManifest(url, btnElement) {
@@ -222,7 +231,7 @@
                 
                 const a = document.createElement('a');
                 a.href = blobUrl;
-                a.download = `Beast_4K_${Date.now()}.jpg`;
+                a.download = `Beast_Manifest_${Date.now()}.jpg`;
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
@@ -289,8 +298,8 @@
         }
 
         function appendUserMessageToUI(message, imgData) {
-            let html = `<div class="flex flex-col items-end w-full"><span class="text-xs font-bold text-gray-400 mb-1 tracking-widest no-select">YOU</span><div class="bg-gray-100 text-black px-6 py-4 rounded-2xl rounded-br-sm max-w-[80%] border border-gray-200 text-[15px] font-medium font-sans">${message}`;
-            if (imgData) html += `<br><img src="${imgData}" class="mt-2 rounded-lg max-h-40 border shadow-sm">`;
+            let html = `<div class="flex flex-col items-end w-full mb-2"><span class="text-xs font-bold text-gray-400 mb-1.5 tracking-widest no-select flex items-center gap-1">YOU <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></span><div class="bg-gray-100 text-black px-6 py-4 rounded-2xl rounded-tr-sm max-w-[80%] text-[15px] font-medium font-sans">${message}`;
+            if (imgData) html += `<br><img src="${imgData}" class="mt-3 rounded-lg max-h-40 border shadow-sm">`;
             html += `</div></div>`;
             document.getElementById('chat-box').innerHTML += html;
         }
@@ -305,7 +314,7 @@
                     <img src="${message}" class="w-full h-auto rounded" onload="stopPercentage()">
                     <button onclick="downloadManifest('${message}', this)" class="absolute bottom-4 right-4 bg-black text-white px-4 py-2 text-xs tracking-widest rounded shadow hover:bg-gray-800 transition opacity-0 group-hover:opacity-100 flex items-center gap-2">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                        DOWNLOAD 4K
+                        DOWNLOAD
                     </button>
                 </div>`;
             } else if (mode === 'chat') {
@@ -314,7 +323,7 @@
                 beastContent = `<div class="text-red-500 font-sans border border-red-200 bg-red-50 px-4 py-3 rounded-xl text-[15px]">${message}</div>`;
             }
 
-            chatBox.innerHTML += `<div class="flex flex-col items-start w-full mt-4"><span class="text-xs font-bold text-black mb-1 tracking-widest no-select">BEAST</span>${beastContent}</div>`;
+            chatBox.innerHTML += `<div class="flex flex-col items-start w-full mt-2"><span class="text-xs font-bold text-black mb-1.5 tracking-widest no-select flex items-center gap-1"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7v5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-5a7 7 0 0 1 7-7h1V5.73A2 2 0 0 1 12 2z"></path></svg> BEAST</span>${beastContent}</div>`;
         }
 
         function handleFile(input) {
