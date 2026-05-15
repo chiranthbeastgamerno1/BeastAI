@@ -32,17 +32,18 @@ def chat():
         if not message and not file:
             return jsonify({"reply": "Silence is not understood by the Beast."}), 400
 
-        # --- THE FLUX HIGH-FIDELITY UPGRADE ---
+        # --- FLUX HIGH-FIDELITY: PORTRAIT MODE ---
         if mode == 'image':
-            # We append prompt engineering for maximum realism
+            # Injected "vertical portrait framing" to help the AI center the subject
             advanced_quality_appendix = (
-                ", photorealistic masterpiece, professional photography, hyper-detailed textures, "
-                "8k resolution textures, cinematic lighting, sharp focus, Sony A1 camera, 35mm lens"
+                ", photorealistic masterpiece, professional photography style, hyper-detailed textures, "
+                "8k resolution textures, cinematic lighting, sharp focus on subject, "
+                "shot on Sony A1 camera, 85mm portrait lens, vertical portrait framing"
             )
             safe_prompt = urllib.parse.quote(message + advanced_quality_appendix)
             
-            # Using the FLUX model and requesting native crisp resolution (1920x1080) instead of stretched 4K
-            image_url = f"https://image.pollinations.ai/prompt/{safe_prompt}?model=flux&nologo=true&width=1920&height=1080"
+            # Swapped width and height to 1080x1920 (9:16 aspect ratio)
+            image_url = f"https://image.pollinations.ai/prompt/{safe_prompt}?model=flux&nologo=true&width=1080&height=1920"
             return jsonify({"reply": image_url})
 
         # --- BEAST CORE LOGIC ---
