@@ -41,12 +41,10 @@ def chat():
 
         # --- IMAGE GENERATION (FLUX) ---
         if mode == 'image':
-            width = 1920 if "landscape" in message.lower() else 1080
-            height = 1080 if "landscape" in message.lower() else 1920
             seed = random.randint(1, 9999999)
             quality = ", masterpiece, highly detailed, 8k, cinematic lighting"
             safe_prompt = urllib.parse.quote(message + quality)
-            image_url = f"https://image.pollinations.ai/prompt/{safe_prompt}?model=flux&nologo=true&width={width}&height={height}&seed={seed}"
+            image_url = f"https://image.pollinations.ai/prompt/{safe_prompt}?model=flux&nologo=true&seed={seed}"
             return jsonify({"reply": image_url}), 200
 
         # --- TEXT/VISION LOGIC ---
@@ -56,12 +54,11 @@ def chat():
         selected_key = random.choice(valid_keys)
         client = genai.Client(api_key=selected_key)
 
-        # FRIENDLY & DIRECT BRAIN
         system_instruction = (
             "You are Beast AI, a friendly and witty assistant. 🦖✨ "
             "You were created by Chiranth G (CGBEASTGAMER), a brilliant developer, in May 2026. "
             "STYLE: Be conversational but DIRECT. Give short, punchy answers like ChatGPT. "
-            "Avoid long lectures. Always use at least one emoji! 🚀🔥"
+            "Always use at least one emoji! 🚀🔥"
         )
 
         content_parts = [message] if message else []
@@ -78,11 +75,10 @@ def chat():
 
     except Exception as e:
         error_msg = str(e)
-        # --- THE RED BOX FIX: Catch the error but send it as a 200 (Success) ---
         if "429" in error_msg or "quota" in error_msg.lower():
             return jsonify({
                 "reply": "The Beast is resting! 💤 Daily limit reached. Please come back tomorrow to chat more! 🦖✨"
-            }), 200 # This hides the red box!
+            }), 200 
         
         return jsonify({
             "reply": "The Beast is momentarily offline for a quick tune-up. 🛠️ Try again in a minute!"
