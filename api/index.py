@@ -32,15 +32,20 @@ def chat():
         if not message and not file:
             return jsonify({"reply": "Silence is not understood by the Beast."}), 400
 
-        # --- FLUX HIGH-FIDELITY: WIDE PORTRAIT MODE ---
+        # --- FLUX HIGH-FIDELITY: DYNAMIC RESOLUTION & ANTI-CACHING ---
         if mode == 'image':
-            advanced_quality_appendix = (
-                ", photorealistic masterpiece, full body shot, zoomed out, wide environmental framing, "
-                "hyper-detailed textures, 8k resolution, cinematic lighting, sharp focus, "
-                "shot on Sony A1 camera, 24mm wide-angle lens"
-            )
+            # 1. Dynamic Aspect Ratio (Type "landscape" to get a wide image, otherwise defaults to portrait)
+            width = 1920 if "landscape" in message.lower() else 1080
+            height = 1080 if "landscape" in message.lower() else 1920
+            
+            # 2. Anti-Caching Seed (Forces the API to generate a brand new image every single time)
+            seed = random.randint(1, 9999999)
+            
+            # 3. Flexible Prompting (Universal high-end styling that won't break objects)
+            advanced_quality_appendix = ", masterpiece, highly detailed, 8k resolution, cinematic lighting, sharp focus, vibrant colors"
             safe_prompt = urllib.parse.quote(message + advanced_quality_appendix)
-            image_url = f"https://image.pollinations.ai/prompt/{safe_prompt}?model=flux&nologo=true&width=1080&height=1920"
+            
+            image_url = f"https://image.pollinations.ai/prompt/{safe_prompt}?model=flux&nologo=true&width={width}&height={height}&seed={seed}"
             return jsonify({"reply": image_url})
 
         # --- BEAST CORE LOGIC ---
@@ -50,7 +55,6 @@ def chat():
         selected_key = random.choice(valid_keys)
         client = genai.Client(api_key=selected_key)
 
-        # BUGFIX: Hardcoded the emoji directive and personality constraints
         system_prompt = (
             "You are Beast AI, a friendly, highly intelligent, and helpful assistant. "
             "Greet users warmly. Be conversational, polite, and detailed. "
