@@ -8,14 +8,17 @@ import random
 
 app = Flask(__name__)
 
-# --- THE 3-KEY SYSTEM ---
-# The Beast looks at Vercel and grabs all 3 of your keys.
+# --- THE 6-KEY LOAD BALANCER ---
+# The Beast checks Vercel for up to 6 different keys to bypass quotas.
 api_keys = [
     os.environ.get("GEMINI_API_KEY_1"),
     os.environ.get("GEMINI_API_KEY_2"),
-    os.environ.get("GEMINI_API_KEY_3")
+    os.environ.get("GEMINI_API_KEY_3"),
+    os.environ.get("GEMINI_API_KEY_4"),
+    os.environ.get("GEMINI_API_KEY_5"),
+    os.environ.get("GEMINI_API_KEY_6")
 ]
-# This ignores any keys you forgot to add, just in case
+# This automatically ignores any keys you haven't added yet
 valid_keys = [key for key in api_keys if key]
 
 @app.route('/api/chat', methods=['POST'])
@@ -41,9 +44,9 @@ def chat():
 
         # 2. Personality & Identity Protocol
         if not valid_keys:
-            return jsonify({"reply": "System Error: No GEMINI API KEYS found in Vercel. Please add GEMINI_API_KEY_1."}), 500
+            return jsonify({"reply": "System Error: No GEMINI API KEYS found in Vercel. Please add at least GEMINI_API_KEY_1."}), 500
 
-        # The Beast randomly picks ONE of your keys to use for this specific message
+        # The Beast randomly picks ONE of your valid keys to use for this specific message
         selected_key = random.choice(valid_keys)
         client = genai.Client(api_key=selected_key)
 
@@ -74,7 +77,7 @@ def chat():
     except Exception as e:
         error_msg = str(e)
         if "429" in error_msg or "quota" in error_msg.lower():
-            return jsonify({"reply": "All Google API keys hit maximum capacity. Please wait 60 seconds."}), 429
+            return jsonify({"reply": "All 6 Google API nodes hit maximum capacity. Please wait 60 seconds."}), 429
         return jsonify({"reply": f"System Error: {error_msg}"}), 500
 
 if __name__ == "__main__":
