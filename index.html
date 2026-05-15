@@ -29,7 +29,7 @@
         .gemini-text { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
     </style>
 </head>
-<body class="bg-zinc-50 text-zinc-900 selection:bg-black selection:text-white flex h-[100dvh] overflow-hidden">
+<body class="bg-zinc-50 text-zinc-900 flex h-[100dvh] overflow-hidden">
 
     <aside id="sidebar" class="fixed top-0 left-0 h-full w-64 bg-zinc-50 border-r border-zinc-200 p-4 pt-6 flex flex-col z-30 -translate-x-full lg:translate-x-0 transition-transform lg:relative shrink-0">
         <div class="flex items-center justify-between mb-8 px-2 mt-2">
@@ -42,7 +42,7 @@
         <nav id="history-list" class="flex-1 space-y-2 overflow-y-auto pr-2 text-sm text-zinc-700 custom-scrollbar gemini-text"></nav>
         
         <div id="auth-section" class="border-t border-zinc-200 pt-4 mt-auto mb-3 flex flex-col gap-3 min-h-[60px] justify-center"></div>
-        <div class="text-center text-[10px] text-zinc-400 font-bold tracking-widest uppercase gemini-text">BEAST CORE v5.1</div>
+        <div class="text-center text-[10px] text-zinc-400 font-bold tracking-widest uppercase gemini-text">BEAST CORE v5.2</div>
     </aside>
 
     <div class="flex-1 flex flex-col h-full w-full relative min-w-0">
@@ -56,16 +56,17 @@
 
         <main id="scroll-container" class="flex-1 overflow-y-auto p-4 sm:p-8 custom-scrollbar bg-zinc-50 pb-10">
             <div class="max-w-3xl mx-auto space-y-8 sm:space-y-10 mt-2 sm:mt-4">
-                <div id="welcome-box" class="w-full max-w-md mx-auto text-center p-6 sm:p-8 border-y border-zinc-300 bg-white text-zinc-600 transition-opacity duration-500">
+                <div id="welcome-box" class="w-full max-w-md mx-auto text-center p-6 border-y border-zinc-300 bg-white text-zinc-600">
                     <span class="whitespace-pre-wrap font-playfair italic text-base sm:text-lg tracking-wide">Welcome to Beast Ai.<br>Pure, unadulterated intelligence.</span>
                 </div>
-                <div id="chat-box" class="w-full space-y-8 sm:space-y-10 hidden flex-col"></div>
+                <div id="chat-box" class="w-full space-y-8 hidden flex-col"></div>
+                
                 <div id="loading-indicator" class="hidden flex-col items-start w-full max-w-prose mt-4">
                     <div class="flex items-center gap-2 mb-2 text-black gemini-text">
                         <i data-lucide="sparkles" class="w-4 h-4 animate-pulse"></i>
                         <span id="loading-status" class="text-xs uppercase tracking-widest font-bold">Beast is thinking</span>
                     </div>
-                    <div class="bg-white border border-zinc-200 p-4 sm:p-6 w-full shadow-sm flex items-center justify-between rounded-lg">
+                    <div class="bg-white border border-zinc-200 p-4 w-full shadow-sm flex items-center justify-between rounded-lg">
                         <div class="flex items-end mb-1"><span class="dot">.</span><span class="dot">.</span><span class="dot">.</span></div>
                         <span id="loading-percent" class="text-xs font-mono font-bold text-zinc-500 bg-zinc-100 px-2 py-1 rounded">0%</span>
                     </div>
@@ -76,20 +77,20 @@
         <footer class="w-full bg-white border-t-2 border-black z-20 p-3 sm:p-6 shrink-0 pb-safe">
             <div class="max-w-3xl mx-auto flex flex-col gap-3 sm:gap-4">
                 <div id="attachment-preview" class="hidden relative self-start inline-block mb-1 ml-2">
-                    <img id="preview-img" src="" class="h-16 sm:h-20 w-auto border-2 border-black shadow-sm object-cover rounded">
-                    <button onclick="clearAttachment()" class="absolute -top-2 -right-2 bg-black text-white p-1 rounded-full hover:bg-red-600 shadow-md transition-colors"><i data-lucide="x" class="w-3 h-3"></i></button>
+                    <img id="preview-img" src="" class="h-16 w-auto border-2 border-black shadow-sm object-cover rounded">
+                    <button onclick="clearAttachment()" class="absolute -top-2 -right-2 bg-black text-white p-1 rounded-full"><i data-lucide="x" class="w-3 h-3"></i></button>
                 </div>
-                <div class="flex items-center gap-4 sm:gap-6 px-2 no-select gemini-text overflow-x-auto">
-                    <button onclick="setMode('chat')" id="btn-converse" class="text-xs font-bold uppercase tracking-widest pb-1 border-b-2 border-black text-black transition-all whitespace-nowrap">Converse</button>
-                    <button onclick="setMode('image')" id="btn-manifest" class="text-xs font-bold uppercase tracking-widest pb-1 border-b-2 border-transparent text-zinc-400 hover:text-zinc-600 transition-all flex items-center gap-1.5 whitespace-nowrap">
+                <div class="flex items-center gap-4 px-2 no-select gemini-text overflow-x-auto">
+                    <button onclick="setMode('chat')" id="btn-converse" class="text-xs font-bold uppercase tracking-widest pb-1 border-b-2 border-black text-black whitespace-nowrap">Converse</button>
+                    <button onclick="setMode('image')" id="btn-manifest" class="text-xs font-bold uppercase tracking-widest pb-1 border-b-2 border-transparent text-zinc-400 whitespace-nowrap flex items-center gap-1.5">
                         <i data-lucide="image" class="w-4 h-4"></i> Manifest Image
                     </button>
                 </div>
                 <div class="relative flex items-end w-full">
-                    <button type="button" onclick="document.getElementById('file-input').click()" class="absolute left-2 bottom-2 p-2 sm:p-3 text-zinc-400 hover:text-black transition-colors z-10"><i data-lucide="paperclip" class="w-5 h-5"></i></button>
+                    <button onclick="document.getElementById('file-input').click()" class="absolute left-2 bottom-2 p-2 text-zinc-400 hover:text-black"><i data-lucide="paperclip" class="w-5 h-5"></i></button>
                     <input type="file" id="file-input" class="hidden" accept="image/*" onchange="handleFile(this)">
-                    <textarea id="user-input" rows="1" class="w-full bg-zinc-50 border-2 border-zinc-200 focus:border-black focus:ring-0 transition-colors p-3 sm:p-4 pl-12 sm:pl-14 pr-14 sm:pr-16 resize-none outline-none gemini-text text-[15px] font-medium text-black placeholder:text-zinc-400 rounded-lg custom-scrollbar min-h-[52px] sm:min-h-[64px] max-h-32 sm:max-h-40" placeholder="Speak to the Beast..." onkeydown="handleEnter(event)"></textarea>
-                    <button onclick="sendMessage()" id="send-btn" class="absolute right-2 bottom-2 p-2 sm:p-3 bg-black text-white hover:bg-zinc-800 disabled:bg-zinc-300 disabled:text-zinc-500 transition-colors z-10 rounded-md"><i data-lucide="send" class="w-5 h-5"></i></button>
+                    <textarea id="user-input" rows="1" class="w-full bg-zinc-50 border-2 border-zinc-200 focus:border-black p-3 pl-12 pr-14 resize-none outline-none text-[15px] rounded-lg min-h-[52px]" placeholder="Speak to the Beast..." onkeydown="handleEnter(event)"></textarea>
+                    <button onclick="sendMessage()" id="send-btn" class="absolute right-2 bottom-2 p-2 bg-black text-white rounded-md"><i data-lucide="send" class="w-5 h-5"></i></button>
                 </div>
             </div>
         </footer>
@@ -98,7 +99,7 @@
     <script>
         lucide.createIcons();
 
-        // --- FIREBASE INITIALIZATION (UPDATED FROM YOUR SCREENSHOT) ---
+        // --- FIREBASE CONFIG ---
         const firebaseConfig = {
             apiKey: "AIzaSyAMipj8Ae6Hek6rt-okqX3BCi2TE-23OX8",
             authDomain: "beast-ai-database.firebaseapp.com",
@@ -114,7 +115,7 @@
         let currentUser = null;
         let currentMode = 'chat', attachedFile = null, percentageInterval = null, currentSessionId = null;
 
-        // AUTH HANDLER
+        // --- AUTH OBSERVER ---
         auth.onAuthStateChanged((user) => {
             const authSection = document.getElementById('auth-section');
             if (user) {
@@ -124,7 +125,7 @@
                         <img src="${user.photoURL}" class="w-8 h-8 rounded-full border border-zinc-300">
                         <div class="flex-1 overflow-hidden">
                             <div class="text-xs font-bold text-black truncate">${user.displayName}</div>
-                            <button onclick="logout()" class="text-[10px] text-zinc-500 hover:text-red-600 transition font-bold uppercase tracking-wider">Sign Out</button>
+                            <button onclick="logout()" class="text-[10px] text-zinc-500 hover:text-red-600 font-bold uppercase tracking-wider">Sign Out</button>
                         </div>
                     </div>`;
             } else {
@@ -138,28 +139,35 @@
             startNewChat();
         });
 
+        // HANDLE REDIRECT LOGIN
+        auth.getRedirectResult().then((result) => {
+            if (result.user) console.log("Cloud Sync Active");
+        }).catch((err) => {
+            if (err.code !== 'auth/no-auth-event') alert("Sync Error: " + err.message);
+        });
+
         function loginWithGoogle() {
             const provider = new firebase.auth.GoogleAuthProvider();
             auth.signInWithRedirect(provider);
         }
 
-        auth.getRedirectResult().catch(err => {
-            if(err.code !== 'auth/no-auth-event') alert("Login Error: Ensure 'beast-ai-sigma.vercel.app' is added to Authorized Domains in Firebase.");
-        });
-
         function logout() { auth.signOut().then(() => window.location.reload()); }
 
-        // --- DATABASE SYNC LOGIC ---
-        function renderHistoryItem(key, sessionData, listElement) {
-            const date = new Date(parseInt(key.replace('BeastAI_Session_', ''))).toLocaleDateString(undefined, {month: 'short', day: 'numeric'});
-            let firstMsg = "New Chat";
-            try { const f = sessionData.find(m => m.type === 'user'); firstMsg = f ? f.message : "Manifestation"; if (firstMsg.length > 22) firstMsg = firstMsg.substring(0, 22) + '...'; } catch(e) {}
-            const isActive = (key === currentSessionId);
-            const item = document.createElement('div');
-            item.className = `flex items-center gap-3 p-3 rounded-lg cursor-pointer transition no-select border ${isActive ? 'bg-zinc-100 border-zinc-300 shadow-sm' : 'hover:bg-zinc-100 border-transparent'}`;
-            item.onclick = () => loadSpecificSession(key);
-            item.innerHTML = `<i data-lucide="message-square" class="w-4 h-4 text-zinc-400 flex-shrink-0"></i><div class="flex-1 overflow-hidden"><div class="font-semibold text-black truncate">${firstMsg}</div><div class="text-xs text-zinc-500 mt-0.5">${date}</div></div>`;
-            listElement.appendChild(item);
+        // --- DATABASE SYNC ---
+        async function saveMessageToHistory(type, message, imgData = null, mode = 'chat') {
+            if (!currentSessionId) currentSessionId = `BeastAI_Session_${Date.now()}`;
+            const newMsg = { type, message, imgData, mode, timestamp: Date.now() };
+            
+            if (currentUser) {
+                const ref = db.collection('users').doc(currentUser.uid).collection('sessions').doc(currentSessionId);
+                const doc = await ref.get();
+                if (doc.exists) await ref.update({ messages: firebase.firestore.FieldValue.arrayUnion(newMsg) });
+                else await ref.set({ timestamp: Date.now(), messages: [newMsg] });
+            } else {
+                let d = JSON.parse(localStorage.getItem(currentSessionId)) || [];
+                d.push(newMsg); localStorage.setItem(currentSessionId, JSON.stringify(d));
+            }
+            loadHistory(); 
         }
 
         async function loadHistory() {
@@ -172,10 +180,21 @@
                 });
             } else {
                 const keys = Object.keys(localStorage).filter(k => k.startsWith('BeastAI_Session_')).sort().reverse();
-                if (keys.length === 0) { list.innerHTML = '<div class="text-xs text-zinc-400 italic px-2 text-center mt-4">Local history empty.</div>'; return; }
                 keys.forEach(key => renderHistoryItem(key, JSON.parse(localStorage.getItem(key)), list));
                 lucide.createIcons();
             }
+        }
+
+        function renderHistoryItem(key, sessionData, listElement) {
+            const date = new Date(parseInt(key.replace('BeastAI_Session_', ''))).toLocaleDateString(undefined, {month: 'short', day: 'numeric'});
+            let firstMsg = "New Chat";
+            try { const f = sessionData.find(m => m.type === 'user'); firstMsg = f ? f.message : "Manifestation"; if (firstMsg.length > 22) firstMsg = firstMsg.substring(0, 22) + '...'; } catch(e) {}
+            const isActive = (key === currentSessionId);
+            const item = document.createElement('div');
+            item.className = `flex items-center gap-3 p-3 rounded-lg cursor-pointer transition border ${isActive ? 'bg-zinc-100 border-zinc-300' : 'border-transparent'}`;
+            item.onclick = () => loadSpecificSession(key);
+            item.innerHTML = `<i data-lucide="message-square" class="w-4 h-4 text-zinc-400 flex-shrink-0"></i><div class="flex-1 overflow-hidden"><div class="font-semibold text-black truncate">${firstMsg}</div><div class="text-xs text-zinc-500 mt-0.5">${date}</div></div>`;
+            listElement.appendChild(item);
         }
 
         async function loadSpecificSession(sessionId) {
@@ -190,79 +209,43 @@
                 if (entry.type === 'user') appendUserMessageToUI(entry.message, entry.imgData);
                 else appendBeastMessageToUI(entry.message, entry.mode);
             }); 
-            loadHistory(); if (window.innerWidth < 1024) toggleSidebar(); setTimeout(scrollToBottom, 100);
+            if (window.innerWidth < 1024) toggleSidebar(); setTimeout(scrollToBottom, 100);
         }
 
-        async function saveMessageToHistory(type, message, imgData = null, mode = 'chat') {
-            if (!currentSessionId) currentSessionId = `BeastAI_Session_${Date.now()}`;
-            const newMsg = { type, message, imgData, mode, timestamp: Date.now() };
-            if (currentUser) {
-                const ref = db.collection('users').doc(currentUser.uid).collection('sessions').doc(currentSessionId);
-                const doc = await ref.get();
-                if (doc.exists) await ref.update({ messages: firebase.firestore.FieldValue.arrayUnion(newMsg) });
-                else await ref.set({ timestamp: Date.now(), messages: [newMsg] });
-            } else {
-                let d = JSON.parse(localStorage.getItem(currentSessionId)) || [];
-                d.push(newMsg); localStorage.setItem(currentSessionId, JSON.stringify(d));
-            }
-            loadHistory(); 
-        }
-
-        // --- STANDARD APP LOGIC ---
-        function startNewChat() {
-            currentSessionId = null; document.getElementById('chat-box').innerHTML = ''; document.getElementById('chat-box').classList.replace('flex', 'hidden');
-            document.getElementById('welcome-box').style.display = 'block'; loadHistory(); if (window.innerWidth < 1024) toggleSidebar(); 
-        }
-        function runPercentage() {
-            const el = document.getElementById('loading-percent'); document.getElementById('send-btn').disabled = true; let s = 0;
-            percentageInterval = setInterval(() => { s += Math.floor(Math.random() * 5) + 1; if (s >= 100) s = 99; el.innerText = s + '%'; }, 250);
-        }
-        function stopPercentage() { clearInterval(percentageInterval); document.getElementById('loading-indicator').classList.replace('flex', 'hidden'); document.getElementById('send-btn').disabled = false; }
-        function setMode(m) {
-            currentMode = m; const isC = m === 'chat';
-            document.getElementById('btn-converse').className = `text-xs font-bold uppercase tracking-widest pb-1 border-b-2 transition-all whitespace-nowrap ${isC ? 'border-black text-black' : 'border-transparent text-zinc-400 hover:text-zinc-600'}`;
-            document.getElementById('btn-manifest').className = `text-xs font-bold uppercase tracking-widest pb-1 border-b-2 transition-all flex items-center gap-1.5 whitespace-nowrap ${!isC ? 'border-black text-black' : 'border-transparent text-zinc-400 hover:text-zinc-600'}`;
-            document.getElementById('user-input').placeholder = isC ? "Speak to the Beast..." : "Describe the vision to manifest...";
-        }
-        async function downloadManifest(u, b) {
-            const o = b.innerHTML; b.innerHTML = `<i data-lucide="check" class="w-4 h-4"></i><span class="text-xs uppercase tracking-widest font-bold">Saved</span>`; lucide.createIcons();
-            try { const r = await fetch(u); const bl = await r.blob(); const url = URL.createObjectURL(bl); const a = document.createElement('a'); a.href = url; a.download = `Beast_Manifest_${Date.now()}.jpg`; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); } catch (e) { alert("Download failed."); }
-            setTimeout(() => { b.innerHTML = o; lucide.createIcons(); }, 2000);
-        }
+        // --- APP LOGIC ---
+        function startNewChat() { currentSessionId = null; document.getElementById('chat-box').innerHTML = ''; document.getElementById('chat-box').classList.replace('flex', 'hidden'); document.getElementById('welcome-box').style.display = 'block'; loadHistory(); }
+        function setMode(m) { currentMode = m; const isC = m === 'chat'; document.getElementById('btn-converse').className = isC ? 'text-xs font-bold border-b-2 border-black text-black pb-1' : 'text-zinc-400 pb-1 text-xs font-bold'; document.getElementById('btn-manifest').className = !isC ? 'text-xs font-bold border-b-2 border-black text-black pb-1 flex items-center gap-1.5' : 'text-zinc-400 pb-1 text-xs font-bold flex items-center gap-1.5'; }
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
+        function handleEnter(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }
         function scrollToBottom() { const c = document.getElementById('scroll-container'); c.scrollTop = c.scrollHeight; }
+        
         async function sendMessage() {
-            const input = document.getElementById('user-input'); const chatBox = document.getElementById('chat-box'); const message = input.value.trim();
-            if (!message && !attachedFile) return; input.value = ''; input.blur();
-            const currentImgData = attachedFile ? document.getElementById('preview-img').src : null;
-            document.getElementById('welcome-box').style.display = 'none'; chatBox.classList.replace('hidden', 'flex');
-            appendUserMessageToUI(message, currentImgData); saveMessageToHistory('user', message, currentImgData, currentMode);
+            const input = document.getElementById('user-input'); const message = input.value.trim();
+            if (!message && !attachedFile) return; input.value = '';
+            const curImg = attachedFile ? document.getElementById('preview-img').src : null;
+            document.getElementById('welcome-box').style.display = 'none';
+            document.getElementById('chat-box').classList.replace('hidden', 'flex');
+            appendUserMessageToUI(message, curImg); saveMessageToHistory('user', message, curImg, currentMode);
             const formData = new FormData(); formData.append('message', message); formData.append('mode', currentMode); if (attachedFile) formData.append('file', attachedFile);
-            clearAttachment(); document.getElementById('loading-indicator').classList.replace('hidden', 'flex'); document.getElementById('loading-percent').innerText = '0%'; runPercentage(); scrollToBottom();
+            clearAttachment(); document.getElementById('loading-indicator').classList.replace('hidden', 'flex'); runPercentage(); scrollToBottom();
             try {
-                const response = await fetch('/api/chat', { method: 'POST', body: formData }); const data = await response.json(); stopPercentage();
-                if (currentMode === 'image' && data.reply.startsWith('http')) { appendBeastMessageToUI(data.reply, 'image'); saveMessageToHistory('beast', data.reply, null, 'image'); } 
-                else { appendBeastMessageToUI(data.reply || "Connection severed.", data.reply?.includes("Error") ? 'error' : 'chat'); saveMessageToHistory('beast', data.reply, null, 'chat'); }
-            } catch (e) { stopPercentage(); appendBeastMessageToUI("Network Failure.", 'error'); }
+                const res = await fetch('/api/chat', { method: 'POST', body: formData }); const data = await res.json(); stopPercentage();
+                appendBeastMessageToUI(data.reply, currentMode === 'image' ? 'image' : 'chat'); saveMessageToHistory('beast', data.reply, null, 'chat');
+            } catch (e) { stopPercentage(); appendBeastMessageToUI("Error connecting to engine.", 'error'); }
             scrollToBottom();
         }
-        function appendUserMessageToUI(m, i) {
-            let h = `<div class="flex flex-col items-end w-full max-w-[90%] self-end ml-auto gemini-text"><div class="flex items-center gap-2 mb-2 text-zinc-400"><span class="text-xs uppercase tracking-widest font-bold">You</span><i data-lucide="user" class="w-4 h-4"></i></div><div class="bg-black text-white p-4 shadow-lg leading-relaxed whitespace-pre-wrap text-[15px] flex flex-col gap-3 items-end rounded-2xl rounded-tr-sm">`;
-            if (i) h += `<img src="${i}" class="max-w-full h-auto max-h-48 border-2 border-zinc-700 rounded">`;
-            if (m) h += `<span>${m}</span>`;
-            h += `</div></div>`; document.getElementById('chat-box').insertAdjacentHTML('beforeend', h); lucide.createIcons();
-        }
+
+        function runPercentage() { let s = 0; percentageInterval = setInterval(() => { s += 5; if (s >= 100) s = 99; document.getElementById('loading-percent').innerText = s + '%'; }, 300); }
+        function stopPercentage() { clearInterval(percentageInterval); document.getElementById('loading-indicator').classList.replace('flex', 'hidden'); }
+        function appendUserMessageToUI(m, i) { let h = `<div class="flex flex-col items-end ml-auto max-w-[85%]"><div class="bg-black text-white p-4 shadow-lg rounded-2xl rounded-tr-sm">`; if (i) h += `<img src="${i}" class="mb-2 max-h-48 rounded">`; if (m) h += `<span>${m}</span>`; h += `</div></div>`; document.getElementById('chat-box').insertAdjacentHTML('beforeend', h); }
         function appendBeastMessageToUI(m, mo) {
-            let c = '';
-            if (mo === 'image') c = `<div class="flex flex-col items-center gap-4 w-full"><div class="relative group w-full"><img src="${m}" class="w-full h-auto border-4 border-black shadow-lg rounded" onload="scrollToBottom()"><button onclick="downloadManifest('${m}', this)" class="absolute bottom-2 right-2 p-2 bg-black text-white flex items-center gap-2 shadow-lg border border-zinc-700 rounded"><i data-lucide="download" class="w-4 h-4"></i><span class="text-[10px] uppercase tracking-widest font-bold">Save</span></button></div></div>`;
-            else if (mo === 'error') c = `<div class="text-red-900 bg-red-50 p-4 border border-red-900 font-semibold rounded">${m}</div>`;
-            else c = `<div class="prose prose-sm sm:prose-base prose-zinc max-w-none prose-p:leading-relaxed gemini-text break-words">${marked.parse(m)}</div>`;
-            let h = `<div class="flex flex-col items-start w-full max-w-prose gemini-text"><div class="flex items-center gap-2 mb-2 text-black"><i data-lucide="sparkles" class="w-4 h-4"></i><span class="text-xs uppercase tracking-widest font-bold">Beast</span></div><div class="bg-white border border-zinc-200 p-5 shadow-sm w-full leading-loose text-zinc-900 rounded-2xl rounded-tl-sm">${c}</div></div>`;
+            let c = mo === 'image' ? `<div class="w-full relative group"><img src="${m}" class="w-full border-4 border-black shadow-lg rounded"><button onclick="downloadManifest('${m}', this)" class="absolute bottom-2 right-2 p-2 bg-black text-white rounded"><i data-lucide="download" class="w-4 h-4"></i></button></div>` : `<div class="prose prose-zinc break-words">${marked.parse(m)}</div>`;
+            let h = `<div class="flex flex-col items-start w-full max-w-prose"><div class="flex items-center gap-2 mb-2"><i data-lucide="sparkles" class="w-4 h-4"></i><span class="text-xs font-bold uppercase">Beast</span></div><div class="bg-white border border-zinc-200 p-6 shadow-sm w-full rounded-2xl rounded-tl-sm">${c}</div></div>`;
             document.getElementById('chat-box').insertAdjacentHTML('beforeend', h); lucide.createIcons();
-            document.querySelectorAll('pre code').forEach((b) => { b.parentElement.classList.add('p-3', 'rounded-lg', 'overflow-x-auto', 'text-xs'); });
         }
-        function handleFile(i) { if (i.files && i.files[0]) { attachedFile = i.files[0]; const r = new FileReader(); r.onload = e => { document.getElementById('preview-img').src = e.target.result; document.getElementById('attachment-preview').classList.replace('hidden', 'inline-block'); }; r.readAsDataURL(attachedFile); } }
+        function handleFile(i) { if (i.files[0]) { attachedFile = i.files[0]; const r = new FileReader(); r.onload = e => { document.getElementById('preview-img').src = e.target.result; document.getElementById('attachment-preview').classList.replace('hidden', 'inline-block'); }; r.readAsDataURL(attachedFile); } }
         function clearAttachment() { attachedFile = null; document.getElementById('file-input').value = ''; document.getElementById('attachment-preview').classList.replace('inline-block', 'hidden'); }
-        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
+        async function downloadManifest(u, b) { const r = await fetch(u); const bl = await r.blob(); const url = URL.createObjectURL(bl); const a = document.createElement('a'); a.href = url; a.download = `Beast_Manifest_${Date.now()}.jpg`; a.click(); }
     </script>
 </body>
 </html>
