@@ -4,11 +4,19 @@ import os
 import urllib.parse
 from PIL import Image
 import io
+import random
 
 app = Flask(__name__)
 
-api_key = os.environ.get("GEMINI_API_KEY")
-client = genai.Client(api_key=api_key) if api_key else None
+# --- THE 3-KEY SYSTEM ---
+# The Beast looks at Vercel and grabs all 3 of your keys.
+api_keys = [
+    os.environ.get("GEMINI_API_KEY_1"),
+    os.environ.get("GEMINI_API_KEY_2"),
+    os.environ.get("GEMINI_API_KEY_3")
+]
+# This ignores any keys you forgot to add, just in case
+valid_keys = [key for key in api_keys if key]
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
@@ -32,8 +40,12 @@ def chat():
             return jsonify({"reply": image_url})
 
         # 2. Personality & Identity Protocol
-        if not client:
-            return jsonify({"reply": "System Error: GEMINI_API_KEY is missing in Vercel."}), 500
+        if not valid_keys:
+            return jsonify({"reply": "System Error: No GEMINI API KEYS found in Vercel. Please add GEMINI_API_KEY_1."}), 500
+
+        # The Beast randomly picks ONE of your keys to use for this specific message
+        selected_key = random.choice(valid_keys)
+        client = genai.Client(api_key=selected_key)
 
         system_prompt = (
             "You are Beast AI, a friendly, highly intelligent, and helpful assistant. "
@@ -62,7 +74,7 @@ def chat():
     except Exception as e:
         error_msg = str(e)
         if "429" in error_msg or "quota" in error_msg.lower():
-            return jsonify({"reply": "Google API Rate Limit Exceeded. Please wait 60 seconds and try again."}), 429
+            return jsonify({"reply": "All Google API keys hit maximum capacity. Please wait 60 seconds."}), 429
         return jsonify({"reply": f"System Error: {error_msg}"}), 500
 
 if __name__ == "__main__":
