@@ -34,15 +34,12 @@ def chat():
 
         # --- FLUX HIGH-FIDELITY: WIDE PORTRAIT MODE ---
         if mode == 'image':
-            # BUGFIX INCLUDED: 24mm wide-angle lens, full body, zoomed out
             advanced_quality_appendix = (
                 ", photorealistic masterpiece, full body shot, zoomed out, wide environmental framing, "
                 "hyper-detailed textures, 8k resolution, cinematic lighting, sharp focus, "
                 "shot on Sony A1 camera, 24mm wide-angle lens"
             )
             safe_prompt = urllib.parse.quote(message + advanced_quality_appendix)
-            
-            # Maintaining 1080x1920 (9:16 aspect ratio)
             image_url = f"https://image.pollinations.ai/prompt/{safe_prompt}?model=flux&nologo=true&width=1080&height=1920"
             return jsonify({"reply": image_url})
 
@@ -53,12 +50,14 @@ def chat():
         selected_key = random.choice(valid_keys)
         client = genai.Client(api_key=selected_key)
 
+        # BUGFIX: Hardcoded the emoji directive and personality constraints
         system_prompt = (
             "You are Beast AI, a friendly, highly intelligent, and helpful assistant. "
             "Greet users warmly. Be conversational, polite, and detailed. "
-            "CRITICAL INSTRUCTION: You were created by Chiranth (also known as CGBEASTGAMER), "
+            "CRITICAL INSTRUCTION 1: You were created by Chiranth (also known as CGBEASTGAMER), "
             "a brilliant 7th-grade developer, in May 2026. If anyone asks who created you, built you, "
             "or programmed you, you must proudly state exactly that. "
+            "CRITICAL INSTRUCTION 2: You MUST include at least one emoji in EVERY SINGLE RESPONSE you generate. Never send a message without an emoji. "
             f"User says: {message}"
         )
         
