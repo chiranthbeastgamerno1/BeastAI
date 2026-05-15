@@ -9,7 +9,7 @@ import io
 import random
 
 app = Flask(__name__)
-CORS(app) # Stops the "Connection Severed" error! 🚀
+CORS(app) 
 
 # --- THE 9-KEY LOAD BALANCER ---
 api_keys = [
@@ -37,31 +37,26 @@ def chat():
         file = request.files.get("file")
 
         if not message and not file:
-            return jsonify({"reply": "The Beast hears only silence. 🤫"}), 400
+            return jsonify({"reply": "Silence is not understood by the Beast. 🤫"}), 400
 
-        # --- IMAGE GENERATION (FLUX) ---
+        # --- FLUX IMAGE GENERATION ---
         if mode == 'image':
-            width = 1920 if "landscape" in message.lower() else 1080
-            height = 1080 if "landscape" in message.lower() else 1920
             seed = random.randint(1, 9999999)
-            quality = ", masterpiece, highly detailed, 8k, cinematic lighting"
-            safe_prompt = urllib.parse.quote(message + quality)
-            image_url = f"https://image.pollinations.ai/prompt/{safe_prompt}?model=flux&nologo=true&width={width}&height={height}&seed={seed}"
+            safe_prompt = urllib.parse.quote(message + ", high quality, 8k")
+            image_url = f"https://image.pollinations.ai/prompt/{safe_prompt}?model=flux&seed={seed}"
             return jsonify({"reply": image_url})
 
-        # --- TEXT/VISION LOGIC ---
+        # --- BEAST AI BRAIN ---
         if not valid_keys:
-            return jsonify({"reply": "System Error: No keys found! ⚠️"}), 500
+            return jsonify({"reply": "System Error: No keys found. ⚠️"}), 500
 
         selected_key = random.choice(valid_keys)
         client = genai.Client(api_key=selected_key)
 
-        # FRIENDLY & DIRECT BRAIN
         system_instruction = (
-            "You are Beast AI, a friendly and witty assistant. 🦖✨ "
-            "You were created by Chiranth (CGBEASTGAMER), a brilliant developer, in May 2026. "
-            "STYLE: Be conversational but DIRECT. Give short, punchy answers like ChatGPT. "
-            "Avoid long lectures. Always use at least one emoji! 🚀🔥"
+            "You are Beast AI, a friendly, witty, and direct assistant. 🦖✨ "
+            "Created by Chiranth (CGBEASTGAMER), a brilliant 7th-grade developer. "
+            "Give direct, concise answers like ChatGPT. Always use emojis! 🚀"
         )
 
         content_parts = [message] if message else []
@@ -77,7 +72,12 @@ def chat():
         return jsonify({"reply": response.text})
 
     except Exception as e:
-        return jsonify({"reply": f"Beast Core Error: {str(e)} ⚠️"}), 500
+        error_msg = str(e)
+        # --- THE PANIC FIX: Change scary errors into friendly messages ---
+        if "429" in error_msg or "quota" in error_msg.lower():
+            return jsonify({"reply": "The Beast is resting! 💤 Daily limit reached. Please come back tomorrow to chat more! 🦖✨"}), 429
+        
+        return jsonify({"reply": f"The Beast is momentarily offline for maintenance. 🛠️ Try again in a minute!"}), 500
 
 if __name__ == "__main__":
     app.run(debug=True)
