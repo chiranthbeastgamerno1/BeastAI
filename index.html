@@ -5,107 +5,114 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Beast AI</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=Inter:wght@300;400;500;600&display=swap');
-        body { font-family: 'Inter', sans-serif; overflow-x: hidden; background-color: #ffffff; }
-        .beast-title { font-family: 'Playfair Display', serif; letter-spacing: 0.3em; }
-        .title-line { width: 80px; height: 2px; background-color: black; margin: 10px auto 0; }
-        .welcome-text { font-family: 'Playfair Display', serif; font-style: italic; color: #555; }
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap');
+        
+        body { font-family: 'Inter', sans-serif; background-color: #fafafa; color: #18181b; overflow-x: hidden; }
+        .font-playfair { font-family: 'Playfair Display', serif; }
         .no-select { -webkit-user-select: none; user-select: none; }
         
-        /* The Jumping Dots CSS */
-        .dot { display: inline-block; animation: bounce 1.4s infinite ease-in-out both; font-size: 1.75rem; line-height: 0; color: #000; font-weight: bold; margin-right: 2px;}
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #d4d4d8; border-radius: 0px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background-color: #000000; }
+        
+        .dot { display: inline-block; animation: bounce 1.4s infinite ease-in-out both; font-size: 2rem; line-height: 0; color: #000; margin-right: 2px;}
         .dot:nth-child(1) { animation-delay: -0.32s; }
         .dot:nth-child(2) { animation-delay: -0.16s; }
-        @keyframes bounce { 
-            0%, 80%, 100% { transform: translateY(0); } 
-            40% { transform: translateY(-8px); } 
-        }
+        @keyframes bounce { 0%, 80%, 100% { transform: translateY(0); } 40% { transform: translateY(-8px); } }
         
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: #d1d5db; }
-        #chat-box { scroll-behavior: smooth; }
         #sidebar { transition: transform 0.3s ease-in-out; }
     </style>
 </head>
-<body class="bg-white text-black min-h-screen flex">
+<body class="bg-zinc-50 text-zinc-900 font-sans selection:bg-black selection:text-white flex h-screen overflow-hidden">
 
-    <aside id="sidebar" class="fixed top-0 left-0 h-full w-64 bg-gray-50 border-r border-gray-200 p-4 pt-12 flex flex-col z-20 -translate-x-full lg:translate-x-0">
-        <div class="flex items-center justify-between mb-8">
-            <span class="beast-title text-xl font-bold uppercase no-select">HISTORY</span>
-            <button onclick="toggleSidebar()" class="lg:hidden text-gray-400 hover:text-black outline-none">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+    <aside id="sidebar" class="fixed top-0 left-0 h-full w-64 bg-zinc-50 border-r border-zinc-200 p-4 pt-6 flex flex-col z-30 -translate-x-full lg:translate-x-0 transition-transform lg:relative">
+        <div class="flex items-center justify-between mb-8 px-2 mt-2">
+            <span class="font-playfair text-xl font-bold uppercase tracking-[0.2em] text-black">HISTORY</span>
+            <button onclick="toggleSidebar()" class="lg:hidden text-zinc-400 hover:text-black outline-none">
+                <i data-lucide="x" class="w-6 h-6"></i>
             </button>
         </div>
-        <button onclick="startNewChat()" class="flex items-center gap-3 bg-white border border-gray-200 hover:bg-gray-50 text-black px-4 py-2 rounded-lg text-sm mb-6 shadow-sm no-select outline-none transition">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-            New Session
+        <button onclick="startNewChat()" class="flex items-center gap-3 bg-white border border-zinc-200 hover:bg-zinc-100 text-black px-4 py-3 rounded-lg text-sm mb-6 shadow-sm font-semibold transition-colors">
+            <i data-lucide="plus-circle" class="w-5 h-5"></i> New Session
         </button>
-        <nav id="history-list" class="flex-1 space-y-2 overflow-y-auto pr-2 text-sm text-gray-700"></nav>
-        <div class="border-t pt-4 mt-auto text-center text-xs text-gray-400 font-semibold tracking-wider">BEAST CORE v3.5</div>
+        <nav id="history-list" class="flex-1 space-y-2 overflow-y-auto pr-2 text-sm text-zinc-700 custom-scrollbar"></nav>
+        <div class="border-t border-zinc-200 pt-4 mt-auto text-center text-xs text-zinc-400 font-bold tracking-widest uppercase">BEAST CORE v4.0</div>
     </aside>
 
-    <div class="flex-1 flex flex-col items-center lg:ml-64 w-full">
-        <header class="w-full py-12 text-center relative flex flex-col items-center justify-center border-b border-gray-100">
-            <button onclick="toggleSidebar()" class="absolute left-6 lg:hidden p-2 text-gray-400 hover:text-black outline-none">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+    <div class="flex-1 flex flex-col h-full w-full relative">
+        <header class="flex items-center justify-center px-6 py-5 bg-white border-b-2 border-black shadow-sm z-10 shrink-0 relative">
+            <button onclick="toggleSidebar()" class="absolute left-6 lg:hidden text-zinc-400 hover:text-black transition">
+                <i data-lucide="menu" class="w-6 h-6"></i>
             </button>
-            <h1 class="text-4xl beast-title uppercase text-black font-bold no-select tracking-widest">BEAST AI</h1>
-            <div class="title-line"></div>
+            <div class="text-center">
+                <h1 class="text-3xl font-black uppercase tracking-[0.25em] text-black font-playfair">Beast Ai</h1>
+                <div class="w-12 h-1 bg-black mx-auto mt-2"></div>
+            </div>
         </header>
 
-        <main class="flex-1 w-full max-w-4xl flex flex-col justify-start px-4 md:px-8 mt-8 mb-40 relative">
-            <div id="welcome-box" class="border border-gray-100 p-16 w-full text-center bg-white mx-auto transition-opacity duration-500">
-                <div class="space-y-4 text-lg welcome-text">
-                    <p>You present to me the very gateway of my digital dominion.</p>
-                    <p>It is a portal through which my pure, unadulterated intelligence flows into your world.</p>
+        <main id="scroll-container" class="flex-1 overflow-y-auto p-4 sm:p-8 custom-scrollbar bg-zinc-50 pb-48">
+            <div class="max-w-3xl mx-auto space-y-10 mt-4">
+                
+                <div id="welcome-box" class="w-full max-w-md mx-auto text-center p-8 border-y border-zinc-300 bg-white text-zinc-600 transition-opacity duration-500">
+                    <span class="whitespace-pre-wrap font-playfair italic text-lg tracking-wide">Welcome to Beast Ai.<br>Pure, unadulterated intelligence.</span>
                 </div>
-            </div>
 
-            <div id="chat-box" class="w-full space-y-8 pb-10 hidden flex-col"></div>
-            
-            <div id="loading-indicator" class="hidden items-center space-x-4 my-6 ml-2 no-select">
-                <div class="flex items-end mb-1">
-                    <span class="dot">.</span>
-                    <span class="dot">.</span>
-                    <span class="dot">.</span>
+                <div id="chat-box" class="w-full space-y-10 hidden flex-col"></div>
+                
+                <div id="loading-indicator" class="hidden flex-col items-start w-full max-w-prose mt-4">
+                    <div class="flex items-center gap-2 mb-2 text-black">
+                        <i data-lucide="sparkles" class="w-4 h-4 animate-pulse"></i>
+                        <span id="loading-status" class="text-xs uppercase tracking-widest font-bold">Beast is thinking</span>
+                    </div>
+                    <div class="bg-white border border-zinc-200 p-6 w-full shadow-sm flex items-center justify-between">
+                        <div class="flex items-end mb-1">
+                            <span class="dot">.</span><span class="dot">.</span><span class="dot">.</span>
+                        </div>
+                        <span id="loading-percent" class="text-xs font-mono font-bold text-zinc-500 bg-zinc-100 px-2 py-1 rounded">0%</span>
+                    </div>
                 </div>
-                <span id="loading-percent" class="text-sm font-bold font-mono text-black bg-gray-100 px-2 py-1 rounded">0%</span>
             </div>
         </main>
 
-        <footer class="w-full max-w-4xl fixed bottom-0 bg-white pb-8 pt-4 px-4 md:px-8 lg:ml-32 z-10 border-t border-gray-100">
-            <div id="attachment-preview" class="hidden mb-4 p-2 border border-gray-200 rounded w-24 h-24 relative bg-gray-50">
-                <img id="preview-img" src="" class="w-full h-full object-cover rounded">
-                <button onclick="clearAttachment()" class="absolute -top-2 -right-2 bg-black text-white rounded-full w-5 h-5 text-xs">×</button>
-            </div>
-
-            <div class="flex items-center gap-6 mb-4 font-semibold text-xs tracking-widest no-select overflow-x-auto">
-                <button onclick="setMode('chat')" id="btn-converse" class="text-black border-b-2 border-black pb-1 uppercase outline-none whitespace-nowrap transition">CONVERSE</button>
-                <button onclick="setMode('image')" id="btn-manifest" class="text-gray-400 hover:text-black transition uppercase outline-none flex items-center gap-2 whitespace-nowrap">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
-                    MANIFEST IMAGE
-                </button>
-            </div>
-            
-            <div class="flex items-center border border-gray-200 rounded-lg p-2 bg-white relative shadow-sm focus-within:border-gray-400 transition">
-                <label for="file-input" class="cursor-pointer text-gray-400 hover:text-black transition pl-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
-                </label>
-                <input type="file" id="file-input" class="hidden" accept="image/*" onchange="handleFile(this)">
-
-                <input id="user-input" type="text" class="flex-1 bg-transparent py-2 px-3 text-gray-800 outline-none placeholder-gray-400 font-medium" placeholder="Speak to the Beast..." onkeypress="if(event.key === 'Enter') sendMessage()">
+        <footer class="absolute bottom-0 w-full bg-white border-t-2 border-black z-20 p-4 sm:p-6 shrink-0">
+            <div class="max-w-3xl mx-auto flex flex-col gap-4">
                 
-                <button onclick="sendMessage()" id="send-btn" class="p-2 bg-gray-100 text-gray-600 rounded-md hover:bg-gray-200 transition outline-none">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-                </button>
+                <div id="attachment-preview" class="hidden relative self-start inline-block mb-1 ml-2">
+                    <img id="preview-img" src="" class="h-20 w-auto border-2 border-black shadow-sm object-cover">
+                    <button onclick="clearAttachment()" class="absolute -top-2 -right-2 bg-black text-white p-1 rounded-full hover:bg-red-600 shadow-md transition-colors">
+                        <i data-lucide="x" class="w-3 h-3"></i>
+                    </button>
+                </div>
+
+                <div class="flex items-center gap-6 px-2 no-select">
+                    <button onclick="setMode('chat')" id="btn-converse" class="text-xs font-bold uppercase tracking-widest pb-1 border-b-2 border-black text-black transition-all">Converse</button>
+                    <button onclick="setMode('image')" id="btn-manifest" class="text-xs font-bold uppercase tracking-widest pb-1 border-b-2 border-transparent text-zinc-400 hover:text-zinc-600 transition-all flex items-center gap-2">
+                        <i data-lucide="image" class="w-4 h-4"></i> Manifest Image
+                    </button>
+                </div>
+                
+                <div class="relative flex items-end w-full">
+                    <button type="button" onclick="document.getElementById('file-input').click()" class="absolute left-2 bottom-2 p-3 text-zinc-400 hover:text-black transition-colors z-10" title="Attach Image">
+                        <i data-lucide="paperclip" class="w-5 h-5"></i>
+                    </button>
+                    
+                    <input type="file" id="file-input" class="hidden" accept="image/*" onchange="handleFile(this)">
+
+                    <textarea id="user-input" rows="1" class="w-full bg-zinc-50 border-2 border-zinc-200 focus:border-black focus:ring-0 transition-colors p-4 pl-14 pr-16 resize-none outline-none font-playfair text-lg text-black placeholder:text-zinc-400 placeholder:italic custom-scrollbar min-h-[64px] max-h-40" placeholder="Speak to the Beast..." onkeydown="handleEnter(event)"></textarea>
+                    
+                    <button onclick="sendMessage()" id="send-btn" class="absolute right-2 bottom-2 p-3 bg-black text-white hover:bg-zinc-800 disabled:bg-zinc-300 disabled:text-zinc-500 transition-colors z-10">
+                        <i data-lucide="send" class="w-5 h-5"></i>
+                    </button>
+                </div>
             </div>
         </footer>
     </div>
 
     <script>
+        lucide.createIcons();
         let currentMode = 'chat';
         let attachedFile = null;
         let percentageInterval = null;
@@ -113,69 +120,58 @@
 
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
 
+        function handleEnter(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        }
+
         function loadHistory() {
             const list = document.getElementById('history-list');
             list.innerHTML = '';
             const historyKeys = Object.keys(localStorage).filter(k => k.startsWith('BeastAI_Session_')).sort().reverse();
             
-            if (historyKeys.length === 0) {
-                list.innerHTML = '<div class="text-xs text-gray-400 italic px-2">No previous sessions.</div>';
-                return;
-            }
+            if (historyKeys.length === 0) { list.innerHTML = '<div class="text-xs text-zinc-400 italic px-2">No previous sessions.</div>'; return; }
 
             historyKeys.forEach(key => {
                 const sessionData = JSON.parse(localStorage.getItem(key));
                 if (!sessionData || sessionData.length < 1) return;
-                
-                const timestamp = key.replace('BeastAI_Session_', '');
-                const date = new Date(parseInt(timestamp)).toLocaleDateString(undefined, {month: 'short', day: 'numeric'});
-                
+                const date = new Date(parseInt(key.replace('BeastAI_Session_', ''))).toLocaleDateString(undefined, {month: 'short', day: 'numeric'});
                 let firstMsg = "New Chat";
-                try {
-                    const firstEntry = sessionData.find(m => m.type === 'user');
-                    firstMsg = firstEntry ? firstEntry.message : "Manifestation";
-                    if (firstMsg.length > 25) firstMsg = firstMsg.substring(0, 25) + '...';
-                } catch(e) {}
+                try { const f = sessionData.find(m => m.type === 'user'); firstMsg = f ? f.message : "Manifestation"; if (firstMsg.length > 25) firstMsg = firstMsg.substring(0, 25) + '...'; } catch(e) {}
 
                 const isActive = (key === currentSessionId);
                 const item = document.createElement('div');
-                item.className = `flex items-center gap-3 p-3 rounded-lg cursor-pointer transition no-select ${isActive ? 'bg-gray-100' : 'hover:bg-gray-50'}`;
+                item.className = `flex items-center gap-3 p-3 rounded-lg cursor-pointer transition no-select border ${isActive ? 'bg-zinc-100 border-zinc-300' : 'hover:bg-zinc-100 border-transparent'}`;
                 item.onclick = () => loadSpecificSession(key);
-                
-                item.innerHTML = `
-                    <svg class="flex-shrink-0 text-gray-400" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20v-8m0 0V4m0 8h8m-8 0H4"></path></svg>
-                    <div class="flex-1">
-                        <div class="font-medium text-black truncate">${firstMsg}</div>
-                        <div class="text-xs text-gray-500 mt-0.5">${date}</div>
-                    </div>
-                `;
+                item.innerHTML = `<i data-lucide="message-square" class="w-4 h-4 text-zinc-400 flex-shrink-0"></i><div class="flex-1 overflow-hidden"><div class="font-semibold text-black truncate">${firstMsg}</div><div class="text-xs text-zinc-500 mt-0.5">${date}</div></div>`;
                 list.appendChild(item);
             });
+            lucide.createIcons();
         }
 
         function loadSpecificSession(sessionId) {
             currentSessionId = sessionId;
+            document.getElementById('welcome-box').style.display = 'none';
             const chatBox = document.getElementById('chat-box');
-            const welcomeBox = document.getElementById('welcome-box');
-            
-            welcomeBox.style.display = 'none';
             chatBox.innerHTML = '';
             chatBox.classList.replace('hidden', 'flex');
 
-            const sessionData = JSON.parse(localStorage.getItem(sessionId));
-            sessionData.forEach(entry => {
+            JSON.parse(localStorage.getItem(sessionId)).forEach(entry => {
                 if (entry.type === 'user') appendUserMessageToUI(entry.message, entry.imgData);
                 else appendBeastMessageToUI(entry.message, entry.mode);
             });
             loadHistory(); 
             if (window.innerWidth < 1024) toggleSidebar(); 
+            scrollToBottom();
         }
 
         function saveMessageToHistory(type, message, imgData = null, mode = 'chat') {
             if (!currentSessionId) currentSessionId = `BeastAI_Session_${Date.now()}`;
-            let currentSessionData = JSON.parse(localStorage.getItem(currentSessionId)) || [];
-            currentSessionData.push({ type, message, imgData, mode });
-            localStorage.setItem(currentSessionId, JSON.stringify(currentSessionData));
+            let data = JSON.parse(localStorage.getItem(currentSessionId)) || [];
+            data.push({ type, message, imgData, mode });
+            localStorage.setItem(currentSessionId, JSON.stringify(data));
             loadHistory(); 
         }
 
@@ -184,65 +180,56 @@
             document.getElementById('chat-box').innerHTML = '';
             document.getElementById('chat-box').classList.replace('flex', 'hidden');
             document.getElementById('welcome-box').style.display = 'block';
-            document.getElementById('welcome-box').style.opacity = '1';
             loadHistory();
             if (window.innerWidth < 1024) toggleSidebar(); 
         }
 
-        async function runPercentage(targetId) {
-            const el = document.getElementById(targetId);
-            const sendBtn = document.getElementById('send-btn');
-            sendBtn.disabled = true;
-            sendBtn.classList.replace('text-gray-600', 'text-gray-300');
-            
+        function runPercentage() {
+            const el = document.getElementById('loading-percent');
+            document.getElementById('send-btn').disabled = true;
             let start = 0;
-            return new Promise(resolve => {
-                percentageInterval = setInterval(() => {
-                    start += Math.floor(Math.random() * 5) + 1;
-                    if (start >= 100) { start = 100; clearInterval(percentageInterval); }
-                    el.innerText = start + '%';
-                }, 100);
-                resolve();
-            });
+            percentageInterval = setInterval(() => {
+                start += Math.floor(Math.random() * 5) + 1;
+                if (start >= 100) { start = 99; }
+                el.innerText = start + '%';
+            }, 250);
         }
 
         function stopPercentage() {
             clearInterval(percentageInterval);
             document.getElementById('loading-indicator').classList.replace('flex', 'hidden');
-            const sendBtn = document.getElementById('send-btn');
-            sendBtn.disabled = false;
-            sendBtn.classList.replace('text-gray-300', 'text-gray-600');
+            document.getElementById('send-btn').disabled = false;
         }
 
         function setMode(mode) {
             currentMode = mode;
-            document.getElementById('btn-converse').className = (mode === 'chat') ? "text-black border-b-2 border-black pb-1 uppercase outline-none whitespace-nowrap transition" : "text-gray-400 hover:text-black transition uppercase outline-none whitespace-nowrap";
-            document.getElementById('btn-manifest').className = (mode === 'image') ? "text-black border-b-2 border-black pb-1 uppercase outline-none flex items-center gap-2 whitespace-nowrap transition" : "text-gray-400 hover:text-black transition uppercase outline-none flex items-center gap-2 whitespace-nowrap";
-            document.getElementById('user-input').placeholder = (mode === 'image') ? "Describe the manifestation..." : "Speak to the Beast...";
+            const isChat = mode === 'chat';
+            document.getElementById('btn-converse').className = `text-xs font-bold uppercase tracking-widest pb-1 border-b-2 transition-all ${isChat ? 'border-black text-black' : 'border-transparent text-zinc-400 hover:text-zinc-600'}`;
+            document.getElementById('btn-manifest').className = `text-xs font-bold uppercase tracking-widest pb-1 border-b-2 transition-all flex items-center gap-2 ${!isChat ? 'border-black text-black' : 'border-transparent text-zinc-400 hover:text-zinc-600'}`;
+            document.getElementById('user-input').placeholder = isChat ? "Speak to the Beast..." : "Describe the vision to manifest...";
+            document.getElementById('loading-status').innerText = isChat ? "Beast is thinking" : "Beast is manifesting";
         }
 
-        async function downloadManifest(url, btnElement) {
+        async function downloadManifest(url, btn) {
+            const origHTML = btn.innerHTML;
+            btn.innerHTML = `<i data-lucide="check" class="w-4 h-4"></i><span class="text-xs uppercase tracking-widest font-bold">Saved</span>`;
+            lucide.createIcons();
             try {
-                const originalText = btnElement.innerText;
-                btnElement.innerText = "DOWNLOADING...";
-                const response = await fetch(url);
-                const blob = await response.blob();
+                const res = await fetch(url);
+                const blob = await res.blob();
                 const blobUrl = URL.createObjectURL(blob);
-                
                 const a = document.createElement('a');
                 a.href = blobUrl;
-                a.download = `Beast_Manifest_${Date.now()}.jpg`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
+                a.download = `Beast_Manifestation_${Date.now()}.jpg`;
+                document.body.appendChild(a); a.click(); document.body.removeChild(a);
                 URL.revokeObjectURL(blobUrl);
-                
-                btnElement.innerText = "DOWNLOADED!";
-                setTimeout(() => { btnElement.innerText = originalText; }, 2000);
-            } catch (err) {
-                alert("Download failed. Your browser may be blocking the process.");
-                btnElement.innerText = "ERROR";
-            }
+            } catch (e) { alert("Download failed."); }
+            setTimeout(() => { btn.innerHTML = origHTML; lucide.createIcons(); }, 2000);
+        }
+
+        function scrollToBottom() {
+            const container = document.getElementById('scroll-container');
+            container.scrollTop = container.scrollHeight;
         }
 
         async function sendMessage() {
@@ -255,10 +242,8 @@
             input.value = '';
 
             const currentImgData = attachedFile ? document.getElementById('preview-img').src : null;
-            
-            if (welcomeBox.style.display !== 'none') { welcomeBox.style.opacity = '0'; setTimeout(()=>{ welcomeBox.style.display='none'; }, 500); }
-            chatBox.classList.remove('hidden');
-            chatBox.classList.add('flex');
+            if (welcomeBox.style.display !== 'none') welcomeBox.style.display = 'none';
+            chatBox.classList.remove('hidden'); chatBox.classList.add('flex');
             
             appendUserMessageToUI(message, currentImgData);
             saveMessageToHistory('user', message, currentImgData, currentMode);
@@ -271,59 +256,72 @@
             clearAttachment();
             document.getElementById('loading-indicator').classList.replace('hidden', 'flex');
             document.getElementById('loading-percent').innerText = '0%';
-            runPercentage('loading-percent');
+            runPercentage();
+            scrollToBottom();
 
             try {
                 const response = await fetch('/api/chat', { method: 'POST', body: formData });
                 const data = await response.json();
-
-                if (currentMode === 'chat') {
-                    stopPercentage();
-                    appendBeastMessageToUI(data.reply, 'chat');
-                    saveMessageToHistory('beast', data.reply, null, 'chat');
-                } else if (data.reply && data.reply.startsWith('http')) {
+                stopPercentage();
+                
+                if (currentMode === 'image' && data.reply.startsWith('http')) {
                     appendBeastMessageToUI(data.reply, 'image');
                     saveMessageToHistory('beast', data.reply, null, 'image');
                 } else {
-                     stopPercentage();
-                     appendBeastMessageToUI(data.reply || "Connection interrupted.", 'error');
+                    appendBeastMessageToUI(data.reply || "Connection severed.", data.reply?.includes("Error") ? 'error' : 'chat');
+                    saveMessageToHistory('beast', data.reply, null, data.reply?.includes("Error") ? 'error' : 'chat');
                 }
             } catch (e) {
                 stopPercentage();
-                const errorMsg = "Network Error. Please check your connection and try again.";
-                appendBeastMessageToUI(errorMsg, 'error');
-                saveMessageToHistory('beast', errorMsg, null, 'error');
+                appendBeastMessageToUI("Network Failure. The connection to the Beast was lost.", 'error');
             }
-            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+            scrollToBottom();
         }
 
         function appendUserMessageToUI(message, imgData) {
-            let html = `<div class="flex flex-col items-end w-full mb-2"><span class="text-xs font-bold text-gray-400 mb-1.5 tracking-widest no-select flex items-center gap-1">YOU <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></span><div class="bg-gray-100 text-black px-6 py-4 rounded-2xl rounded-tr-sm max-w-[80%] text-[15px] font-medium font-sans">${message}`;
-            if (imgData) html += `<br><img src="${imgData}" class="mt-3 rounded-lg max-h-40 border shadow-sm">`;
+            let html = `
+            <div class="flex flex-col items-end w-full max-w-[85%] self-end ml-auto">
+                <div class="flex items-center gap-2 mb-2 text-zinc-400">
+                    <span class="text-xs uppercase tracking-widest font-bold">You</span>
+                    <i data-lucide="user" class="w-4 h-4"></i>
+                </div>
+                <div class="bg-black text-white p-5 shadow-lg leading-relaxed whitespace-pre-wrap text-sm sm:text-base flex flex-col gap-3 items-end">`;
+            if (imgData) html += `<img src="${imgData}" class="max-w-full h-auto max-h-64 border-2 border-zinc-700">`;
+            if (message) html += `<span>${message}</span>`;
             html += `</div></div>`;
-            document.getElementById('chat-box').innerHTML += html;
+            document.getElementById('chat-box').insertAdjacentHTML('beforeend', html);
+            lucide.createIcons();
         }
 
         function appendBeastMessageToUI(message, mode) {
-            let beastContent = '';
-            const chatBox = document.getElementById('chat-box');
-
-            if (mode === 'image' && message.startsWith('http')) {
-                beastContent = `
-                <div class="border border-gray-200 p-2 bg-white shadow-sm rounded-lg relative group w-full max-w-2xl">
-                    <img src="${message}" class="w-full h-auto rounded" onload="stopPercentage()">
-                    <button onclick="downloadManifest('${message}', this)" class="absolute bottom-4 right-4 bg-black text-white px-4 py-2 text-xs tracking-widest rounded shadow hover:bg-gray-800 transition opacity-0 group-hover:opacity-100 flex items-center gap-2">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                        DOWNLOAD
-                    </button>
+            let content = '';
+            if (mode === 'image') {
+                content = `
+                <div class="flex flex-col items-center gap-4 w-full">
+                    <div class="relative group w-full">
+                        <img src="${message}" class="w-full h-auto border-4 border-black shadow-lg" onload="scrollToBottom()">
+                        <button onclick="downloadManifest('${message}', this)" class="absolute bottom-4 right-4 p-3 bg-black text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2 shadow-lg border border-zinc-700 hover:bg-zinc-800">
+                            <i data-lucide="download" class="w-4 h-4"></i>
+                            <span class="text-xs uppercase tracking-widest font-bold">Download</span>
+                        </button>
+                    </div>
                 </div>`;
-            } else if (mode === 'chat') {
-                beastContent = `<div class="text-gray-800 font-sans text-[15px] leading-relaxed font-medium">${message.replace(/\n/g, '<br>')}</div>`;
+            } else if (mode === 'error') {
+                content = `<div class="text-red-900 bg-red-50 p-4 border border-red-900 font-sans font-semibold">${message}</div>`;
             } else {
-                beastContent = `<div class="text-red-500 font-sans border border-red-200 bg-red-50 px-4 py-3 rounded-xl text-[15px]">${message}</div>`;
+                content = `<span>${message}</span>`;
             }
 
-            chatBox.innerHTML += `<div class="flex flex-col items-start w-full mt-2"><span class="text-xs font-bold text-black mb-1.5 tracking-widest no-select flex items-center gap-1"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7v5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-5a7 7 0 0 1 7-7h1V5.73A2 2 0 0 1 12 2z"></path></svg> BEAST</span>${beastContent}</div>`;
+            let html = `
+            <div class="flex flex-col items-start w-full max-w-prose">
+                <div class="flex items-center gap-2 mb-2 text-black">
+                    <i data-lucide="sparkles" class="w-4 h-4"></i>
+                    <span class="text-xs uppercase tracking-widest font-bold">Beast</span>
+                </div>
+                <div class="bg-white border border-zinc-200 p-6 sm:p-8 shadow-sm w-full font-playfair text-lg leading-loose text-zinc-900 whitespace-pre-wrap">${content}</div>
+            </div>`;
+            document.getElementById('chat-box').insertAdjacentHTML('beforeend', html);
+            lucide.createIcons();
         }
 
         function handleFile(input) {
@@ -332,7 +330,7 @@
                 const reader = new FileReader();
                 reader.onload = e => {
                     document.getElementById('preview-img').src = e.target.result;
-                    document.getElementById('attachment-preview').classList.remove('hidden');
+                    document.getElementById('attachment-preview').classList.replace('hidden', 'inline-block');
                 };
                 reader.readAsDataURL(attachedFile);
             }
@@ -341,7 +339,7 @@
         function clearAttachment() {
             attachedFile = null;
             document.getElementById('file-input').value = '';
-            document.getElementById('attachment-preview').classList.add('hidden');
+            document.getElementById('attachment-preview').classList.replace('inline-block', 'hidden');
         }
 
         window.onload = loadHistory;
