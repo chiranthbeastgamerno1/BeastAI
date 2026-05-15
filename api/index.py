@@ -8,17 +8,20 @@ import random
 
 app = Flask(__name__)
 
-# --- THE 6-KEY LOAD BALANCER ---
-# The Beast checks Vercel for up to 6 different keys to bypass quotas.
+# --- THE 9-KEY LOAD BALANCER ---
+# The Beast checks Vercel for up to 9 different keys to bypass quotas.
 api_keys = [
     os.environ.get("GEMINI_API_KEY_1"),
     os.environ.get("GEMINI_API_KEY_2"),
     os.environ.get("GEMINI_API_KEY_3"),
     os.environ.get("GEMINI_API_KEY_4"),
     os.environ.get("GEMINI_API_KEY_5"),
-    os.environ.get("GEMINI_API_KEY_6")
+    os.environ.get("GEMINI_API_KEY_6"),
+    os.environ.get("GEMINI_API_KEY_7"),
+    os.environ.get("GEMINI_API_KEY_8"),
+    os.environ.get("GEMINI_API_KEY_9")
 ]
-# This automatically ignores any keys you haven't added yet
+# This automatically ignores any empty slots if you don't have all 9 keys yet
 valid_keys = [key for key in api_keys if key]
 
 @app.route('/api/chat', methods=['POST'])
@@ -77,7 +80,7 @@ def chat():
     except Exception as e:
         error_msg = str(e)
         if "429" in error_msg or "quota" in error_msg.lower():
-            return jsonify({"reply": "All 6 Google API nodes hit maximum capacity. Please wait 60 seconds."}), 429
+            return jsonify({"reply": "All 9 Google API nodes hit maximum capacity. Please wait 60 seconds."}), 429
         return jsonify({"reply": f"System Error: {error_msg}"}), 500
 
 if __name__ == "__main__":
