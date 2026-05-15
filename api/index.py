@@ -37,26 +37,31 @@ def chat():
         file = request.files.get("file")
 
         if not message and not file:
-            return jsonify({"reply": "Silence is not understood by the Beast. 🤫"}), 400
+            return jsonify({"reply": "The Beast hears only silence. 🤫"}), 200
 
-        # --- FLUX IMAGE GENERATION ---
+        # --- IMAGE GENERATION (FLUX) ---
         if mode == 'image':
+            width = 1920 if "landscape" in message.lower() else 1080
+            height = 1080 if "landscape" in message.lower() else 1920
             seed = random.randint(1, 9999999)
-            safe_prompt = urllib.parse.quote(message + ", high quality, 8k")
-            image_url = f"https://image.pollinations.ai/prompt/{safe_prompt}?model=flux&seed={seed}"
-            return jsonify({"reply": image_url})
+            quality = ", masterpiece, highly detailed, 8k, cinematic lighting"
+            safe_prompt = urllib.parse.quote(message + quality)
+            image_url = f"https://image.pollinations.ai/prompt/{safe_prompt}?model=flux&nologo=true&width={width}&height={height}&seed={seed}"
+            return jsonify({"reply": image_url}), 200
 
-        # --- BEAST AI BRAIN ---
+        # --- TEXT/VISION LOGIC ---
         if not valid_keys:
-            return jsonify({"reply": "System Error: No keys found. ⚠️"}), 500
+            return jsonify({"reply": "System Error: No keys found! ⚠️"}), 200
 
         selected_key = random.choice(valid_keys)
         client = genai.Client(api_key=selected_key)
 
+        # FRIENDLY & DIRECT BRAIN
         system_instruction = (
-            "You are Beast AI, a friendly, witty, and direct assistant. 🦖✨ "
-            "Created by Chiranth (CGBEASTGAMER), a brilliant 7th-grade developer. "
-            "Give direct, concise answers like ChatGPT. Always use emojis! 🚀"
+            "You are Beast AI, a friendly and witty assistant. 🦖✨ "
+            "You were created by Chiranth G (CGBEASTGAMER), a brilliant developer, in May 2026. "
+            "STYLE: Be conversational but DIRECT. Give short, punchy answers like ChatGPT. "
+            "Avoid long lectures. Always use at least one emoji! 🚀🔥"
         )
 
         content_parts = [message] if message else []
@@ -69,15 +74,19 @@ def chat():
             contents=content_parts,
             config=types.GenerateContentConfig(system_instruction=system_instruction)
         )
-        return jsonify({"reply": response.text})
+        return jsonify({"reply": response.text}), 200
 
     except Exception as e:
         error_msg = str(e)
-        # --- THE PANIC FIX: Change scary errors into friendly messages ---
+        # --- THE RED BOX FIX: Catch the error but send it as a 200 (Success) ---
         if "429" in error_msg or "quota" in error_msg.lower():
-            return jsonify({"reply": "The Beast is resting! 💤 Daily limit reached. Please come back tomorrow to chat more! 🦖✨"}), 429
+            return jsonify({
+                "reply": "The Beast is resting! 💤 Daily limit reached. Please come back tomorrow to chat more! 🦖✨"
+            }), 200 # This hides the red box!
         
-        return jsonify({"reply": f"The Beast is momentarily offline for maintenance. 🛠️ Try again in a minute!"}), 500
+        return jsonify({
+            "reply": "The Beast is momentarily offline for a quick tune-up. 🛠️ Try again in a minute!"
+        }), 200
 
 if __name__ == "__main__":
     app.run(debug=True)
