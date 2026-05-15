@@ -4,9 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
     <title>Beast AI</title>
+    
     <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap');
         
@@ -39,11 +45,13 @@
             <i data-lucide="plus-circle" class="w-5 h-5"></i> New Session
         </button>
         <nav id="history-list" class="flex-1 space-y-2 overflow-y-auto pr-2 text-sm text-zinc-700 custom-scrollbar gemini-text"></nav>
-        <div class="border-t border-zinc-200 pt-4 mt-auto text-center text-xs text-zinc-400 font-bold tracking-widest uppercase gemini-text">BEAST CORE v4.6</div>
+        
+        <div id="auth-section" class="border-t border-zinc-200 pt-4 mt-auto mb-3 flex flex-col gap-3 min-h-[60px] justify-center">
+            </div>
+        <div class="text-center text-[10px] text-zinc-400 font-bold tracking-widest uppercase gemini-text">BEAST CORE v5.0</div>
     </aside>
 
     <div class="flex-1 flex flex-col h-full w-full relative min-w-0">
-        
         <header class="flex items-center justify-center px-6 py-4 bg-white border-b-2 border-black shadow-sm z-10 shrink-0 relative">
             <button onclick="toggleSidebar()" class="absolute left-4 lg:hidden text-zinc-400 hover:text-black transition"><i data-lucide="menu" class="w-6 h-6"></i></button>
             <div class="text-center">
@@ -54,11 +62,9 @@
 
         <main id="scroll-container" class="flex-1 overflow-y-auto p-4 sm:p-8 custom-scrollbar bg-zinc-50 pb-10">
             <div class="max-w-3xl mx-auto space-y-8 sm:space-y-10 mt-2 sm:mt-4">
-                
                 <div id="welcome-box" class="w-full max-w-md mx-auto text-center p-6 sm:p-8 border-y border-zinc-300 bg-white text-zinc-600 transition-opacity duration-500">
                     <span class="whitespace-pre-wrap font-playfair italic text-base sm:text-lg tracking-wide">Welcome to Beast Ai.<br>Pure, unadulterated intelligence.</span>
                 </div>
-
                 <div id="chat-box" class="w-full space-y-8 sm:space-y-10 hidden flex-col"></div>
                 
                 <div id="loading-indicator" class="hidden flex-col items-start w-full max-w-prose mt-4">
@@ -76,19 +82,16 @@
 
         <footer class="w-full bg-white border-t-2 border-black z-20 p-3 sm:p-6 shrink-0 pb-safe">
             <div class="max-w-3xl mx-auto flex flex-col gap-3 sm:gap-4">
-                
                 <div id="attachment-preview" class="hidden relative self-start inline-block mb-1 ml-2">
                     <img id="preview-img" src="" class="h-16 sm:h-20 w-auto border-2 border-black shadow-sm object-cover rounded">
                     <button onclick="clearAttachment()" class="absolute -top-2 -right-2 bg-black text-white p-1 rounded-full hover:bg-red-600 shadow-md transition-colors"><i data-lucide="x" class="w-3 h-3"></i></button>
                 </div>
-
                 <div class="flex items-center gap-4 sm:gap-6 px-2 no-select gemini-text overflow-x-auto">
                     <button onclick="setMode('chat')" id="btn-converse" class="text-xs font-bold uppercase tracking-widest pb-1 border-b-2 border-black text-black transition-all whitespace-nowrap">Converse</button>
                     <button onclick="setMode('image')" id="btn-manifest" class="text-xs font-bold uppercase tracking-widest pb-1 border-b-2 border-transparent text-zinc-400 hover:text-zinc-600 transition-all flex items-center gap-1.5 whitespace-nowrap">
                         <i data-lucide="image" class="w-4 h-4"></i> Manifest Image
                     </button>
                 </div>
-                
                 <div class="relative flex items-end w-full">
                     <button type="button" onclick="document.getElementById('file-input').click()" class="absolute left-2 bottom-2 p-2 sm:p-3 text-zinc-400 hover:text-black transition-colors z-10"><i data-lucide="paperclip" class="w-5 h-5"></i></button>
                     <input type="file" id="file-input" class="hidden" accept="image/*" onchange="handleFile(this)">
@@ -101,44 +104,135 @@
 
     <script>
         lucide.createIcons();
+
+        // --- FIREBASE INITIALIZATION ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyAMipj8Ae6Hek6rt-okqX3BCi2TE-23OX8",
+            authDomain: "beast-ai-database.firebaseapp.com",
+            projectId: "beast-ai-database",
+            storageBucket: "beast-ai-database.firebasestorage.app",
+            messagingSenderId: "102702785923",
+            appId: "1:102702785923:web:42926ae65ed8b990e3c2b6"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        let currentUser = null;
         let currentMode = 'chat', attachedFile = null, percentageInterval = null, currentSessionId = null;
 
+        // --- AUTHENTICATION STATE OBSERVER ---
+        auth.onAuthStateChanged((user) => {
+            const authSection = document.getElementById('auth-section');
+            if (user) {
+                currentUser = user;
+                authSection.innerHTML = `
+                    <div class="flex items-center gap-3 bg-zinc-100 p-2 rounded-lg border border-zinc-200">
+                        <img src="${user.photoURL}" class="w-8 h-8 rounded-full border border-zinc-300">
+                        <div class="flex-1 overflow-hidden">
+                            <div class="text-xs font-bold text-black truncate">${user.displayName}</div>
+                            <button onclick="logout()" class="text-[10px] text-zinc-500 hover:text-red-600 transition font-bold uppercase tracking-wider">Sign Out</button>
+                        </div>
+                    </div>
+                `;
+            } else {
+                currentUser = null;
+                authSection.innerHTML = `
+                    <button onclick="loginWithGoogle()" class="w-full bg-white border-2 border-black text-black px-4 py-2.5 rounded-lg text-sm font-bold flex items-center justify-center gap-2 hover:bg-black hover:text-white transition shadow-sm">
+                        <svg class="w-4 h-4" viewBox="0 0 24 24"><path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                        Login with Google
+                    </button>
+                `;
+            }
+            startNewChat(); // Reloads history based on auth state
+        });
+
+        function loginWithGoogle() {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            auth.signInWithPopup(provider).catch(err => alert("Login Failed: " + err.message));
+        }
+
+        function logout() {
+            auth.signOut();
+        }
+
+        // --- CORE UI FUNCTIONS ---
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
         function handleEnter(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }
-        
-        function loadHistory() {
-            const list = document.getElementById('history-list'); list.innerHTML = '';
-            const historyKeys = Object.keys(localStorage).filter(k => k.startsWith('BeastAI_Session_')).sort().reverse();
-            if (historyKeys.length === 0) { list.innerHTML = '<div class="text-xs text-zinc-400 italic px-2">No previous sessions.</div>'; return; }
 
-            historyKeys.forEach(key => {
-                const sessionData = JSON.parse(localStorage.getItem(key)); if (!sessionData || sessionData.length < 1) return;
-                const date = new Date(parseInt(key.replace('BeastAI_Session_', ''))).toLocaleDateString(undefined, {month: 'short', day: 'numeric'});
-                let firstMsg = "New Chat";
-                try { const f = sessionData.find(m => m.type === 'user'); firstMsg = f ? f.message : "Manifestation"; if (firstMsg.length > 25) firstMsg = firstMsg.substring(0, 25) + '...'; } catch(e) {}
-
-                const isActive = (key === currentSessionId);
-                const item = document.createElement('div');
-                item.className = `flex items-center gap-3 p-3 rounded-lg cursor-pointer transition no-select border ${isActive ? 'bg-zinc-100 border-zinc-300' : 'hover:bg-zinc-100 border-transparent'}`;
-                item.onclick = () => loadSpecificSession(key);
-                item.innerHTML = `<i data-lucide="message-square" class="w-4 h-4 text-zinc-400 flex-shrink-0"></i><div class="flex-1 overflow-hidden"><div class="font-semibold text-black truncate">${firstMsg}</div><div class="text-xs text-zinc-500 mt-0.5">${date}</div></div>`;
-                list.appendChild(item);
-            }); lucide.createIcons();
+        function renderHistoryItem(key, sessionData, listElement) {
+            const date = new Date(parseInt(key.replace('BeastAI_Session_', ''))).toLocaleDateString(undefined, {month: 'short', day: 'numeric'});
+            let firstMsg = "New Chat";
+            try { const f = sessionData.find(m => m.type === 'user'); firstMsg = f ? f.message : "Manifestation"; if (firstMsg.length > 22) firstMsg = firstMsg.substring(0, 22) + '...'; } catch(e) {}
+            const isActive = (key === currentSessionId);
+            const item = document.createElement('div');
+            item.className = `flex items-center gap-3 p-3 rounded-lg cursor-pointer transition no-select border ${isActive ? 'bg-zinc-100 border-zinc-300 shadow-sm' : 'hover:bg-zinc-100 border-transparent'}`;
+            item.onclick = () => loadSpecificSession(key);
+            item.innerHTML = `<i data-lucide="message-square" class="w-4 h-4 text-zinc-400 flex-shrink-0"></i><div class="flex-1 overflow-hidden"><div class="font-semibold text-black truncate">${firstMsg}</div><div class="text-xs text-zinc-500 mt-0.5">${date}</div></div>`;
+            listElement.appendChild(item);
         }
 
-        function loadSpecificSession(sessionId) {
+        async function loadHistory() {
+            const list = document.getElementById('history-list'); list.innerHTML = '';
+            
+            if (currentUser) {
+                // Fetch from FIRESTORE CLOUD
+                db.collection('users').doc(currentUser.uid).collection('sessions').orderBy('timestamp', 'desc').get()
+                .then(snapshot => {
+                    if (snapshot.empty) { list.innerHTML = '<div class="text-xs text-zinc-400 italic px-2 text-center mt-4">Cloud history empty.</div>'; return; }
+                    snapshot.forEach(doc => renderHistoryItem(doc.id, doc.data().messages, list));
+                    lucide.createIcons();
+                });
+            } else {
+                // Fetch from LOCAL STORAGE
+                const historyKeys = Object.keys(localStorage).filter(k => k.startsWith('BeastAI_Session_')).sort().reverse();
+                if (historyKeys.length === 0) { list.innerHTML = '<div class="text-xs text-zinc-400 italic px-2 text-center mt-4">Local history empty.<br>Login to sync to cloud.</div>'; return; }
+                historyKeys.forEach(key => {
+                    const sessionData = JSON.parse(localStorage.getItem(key)); if (!sessionData || sessionData.length < 1) return;
+                    renderHistoryItem(key, sessionData, list);
+                });
+                lucide.createIcons();
+            }
+        }
+
+        async function loadSpecificSession(sessionId) {
             currentSessionId = sessionId; document.getElementById('welcome-box').style.display = 'none';
             const chatBox = document.getElementById('chat-box'); chatBox.innerHTML = ''; chatBox.classList.replace('hidden', 'flex');
-            JSON.parse(localStorage.getItem(sessionId)).forEach(entry => {
+            
+            let sessionData = [];
+            if (currentUser) {
+                const doc = await db.collection('users').doc(currentUser.uid).collection('sessions').doc(sessionId).get();
+                if (doc.exists) sessionData = doc.data().messages;
+            } else {
+                sessionData = JSON.parse(localStorage.getItem(sessionId)) || [];
+            }
+
+            sessionData.forEach(entry => {
                 if (entry.type === 'user') appendUserMessageToUI(entry.message, entry.imgData);
                 else appendBeastMessageToUI(entry.message, entry.mode);
-            }); loadHistory(); if (window.innerWidth < 1024) toggleSidebar(); setTimeout(scrollToBottom, 100);
+            }); 
+            loadHistory(); if (window.innerWidth < 1024) toggleSidebar(); setTimeout(scrollToBottom, 100);
         }
 
-        function saveMessageToHistory(type, message, imgData = null, mode = 'chat') {
+        async function saveMessageToHistory(type, message, imgData = null, mode = 'chat') {
             if (!currentSessionId) currentSessionId = `BeastAI_Session_${Date.now()}`;
-            let data = JSON.parse(localStorage.getItem(currentSessionId)) || [];
-            data.push({ type, message, imgData, mode }); localStorage.setItem(currentSessionId, JSON.stringify(data)); loadHistory(); 
+            const newMsg = { type, message, imgData, mode, timestamp: Date.now() };
+
+            if (currentUser) {
+                // Save to FIRESTORE CLOUD
+                const sessionRef = db.collection('users').doc(currentUser.uid).collection('sessions').doc(currentSessionId);
+                const doc = await sessionRef.get();
+                if (doc.exists) {
+                    await sessionRef.update({ messages: firebase.firestore.FieldValue.arrayUnion(newMsg) });
+                } else {
+                    await sessionRef.set({ timestamp: Date.now(), messages: [newMsg] });
+                }
+            } else {
+                // Save to LOCAL STORAGE
+                let data = JSON.parse(localStorage.getItem(currentSessionId)) || [];
+                data.push(newMsg); localStorage.setItem(currentSessionId, JSON.stringify(data));
+            }
+            loadHistory(); 
         }
 
         function startNewChat() {
@@ -172,10 +266,7 @@
 
         async function sendMessage() {
             const input = document.getElementById('user-input'); const chatBox = document.getElementById('chat-box'); const welcomeBox = document.getElementById('welcome-box'); const message = input.value.trim();
-            if (!message && !attachedFile) return; input.value = '';
-            
-            // Hide mobile keyboard after sending to reclaim screen space
-            input.blur();
+            if (!message && !attachedFile) return; input.value = ''; input.blur();
 
             const currentImgData = attachedFile ? document.getElementById('preview-img').src : null;
             if (welcomeBox.style.display !== 'none') welcomeBox.style.display = 'none';
@@ -226,14 +317,11 @@
                 <div class="bg-white border border-zinc-200 p-5 sm:p-8 shadow-sm w-full leading-loose text-zinc-900 rounded-2xl rounded-tl-sm">${content}</div>
             </div>`;
             document.getElementById('chat-box').insertAdjacentHTML('beforeend', html); lucide.createIcons();
-            
             document.querySelectorAll('pre code').forEach((block) => { block.parentElement.classList.add('p-3', 'sm:p-4', 'rounded-lg', 'overflow-x-auto', 'text-xs', 'sm:text-sm'); });
         }
 
         function handleFile(input) { if (input.files && input.files[0]) { attachedFile = input.files[0]; const reader = new FileReader(); reader.onload = e => { document.getElementById('preview-img').src = e.target.result; document.getElementById('attachment-preview').classList.replace('hidden', 'inline-block'); }; reader.readAsDataURL(attachedFile); } }
         function clearAttachment() { attachedFile = null; document.getElementById('file-input').value = ''; document.getElementById('attachment-preview').classList.replace('inline-block', 'hidden'); }
-
-        window.onload = loadHistory;
     </script>
 </body>
 </html>
