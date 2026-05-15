@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beast AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=Inter:wght@300;400;500;600&display=swap');
+        body { font-family: 'Inter', sans-serif; overflow-x: hidden; }
+        .beast-title { font-family: 'Playfair Display', serif; letter-spacing: 0.3em; }
+        .title-line { width: 80px; height: 3px; background-color: black; margin: 10px auto 0; }
+        .welcome-text { font-family: 'Playfair Display', serif; font-style: italic; color: #555; }
+        .no-select { -webkit-user-select: none; user-select: none; }
+        .dot { display: inline-block; animation: bounce 1.4s infinite ease-in-out both; font-size: 1.5rem; color: #666; }
+        .dot:nth-child(1) { animation-delay: -0.32s; }
+        .dot:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes bounce { 0%, 80%, 100% { transform: translateY(0); } 40% { transform: translateY(-8px); } }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #d1d5db; }
+        #chat-box { scroll-behavior: smooth; }
+        #sidebar { transition: transform 0.3s ease-in-out; }
+    </style>
+</head>
+<body class="bg-white text-black min-h-screen flex">
+
+    <aside id="sidebar" class="fixed top-0 left-0 h-full w-64 bg-gray-50 border-r border-gray-200 p-4 pt-12 flex flex-col z-20 -translate-x-full lg:translate-x-0">
+        <div class="flex items-center justify-between mb-8">
+            <span class="beast-title text-xl font-bold uppercase no-select">HISTORY</span>
+            <button onclick="toggleSidebar()" class="lg:hidden text-gray-400 hover:text-black outline-none">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+        </div>
+        <button onclick="startNewChat()" class="flex items-center gap-3 bg-gray-100 hover:bg-gray-200 text-black px-4 py-2 rounded-lg text-sm mb-6 shadow-sm no-select outline-none">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            New Session
+        </button>
+        <nav id="history-list" class="flex-1 space-y-2 overflow-y-auto pr-2 text-sm text-gray-700"></nav>
+        <div class="border-t pt-4 mt-auto text-center text-xs text-gray-400 font-semibold tracking-wider">BEAST CORE v3.0</div>
+    </aside>
+
+    <div class="flex-1 flex flex-col items-center lg:ml-64 w-full">
+        <header class="w-full py-12 text-center relative flex items-center justify-center">
+            <button onclick="toggleSidebar()" class="absolute left-6 lg:hidden p-2 text-gray-400 hover:text-black outline-none">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+            </button>
+            <h1 class="text-4xl beast-title uppercase text-black font-bold no-select">BEAST AI</h1>
+        </header>
+
+        <main class="flex-1 w-full max-w-4xl flex flex-col justify-center px-4 md:px-8 mb-40 relative">
+            <div id="welcome-box" class="border border-gray-200 p-16 w-full text-center shadow-sm bg-white mx-auto mt-10 transition-opacity duration-500">
+                <div class="space-y-2 text-xl welcome-text">
+                    <p>Welcome to Beast Ai.</p>
+                    <p>Pure, unadulterated intelligence.</p>
+                </div>
+            </div>
+
+            <div id="chat-box" class="w-full space-y-8 pb-10 hidden flex-col"></div>
+            
+            <div id="loading-indicator" class="hidden items-center space-x-3 text-gray-500 font-medium my-4 ml-2 no-select">
+                <div class="flex space-x-1"><span class="dot">.</span><span class="dot">.</span><span class="dot">.</span></div>
+                <span id="loading-percent" class="text-sm font-bold font-mono text-black">0%</span>
+                <span id="loading-text" class="text-xs italic">(Processing...)</span>
+            </div>
+        </main>
+
+        <footer class="w-full max-w-4xl fixed bottom-0 bg-white pb-8 pt-4 px-4 md:px-8 lg:ml-32 z-10">
+            <div id="attachment-preview" class="hidden mb-4 p-2 border border-gray-200 rounded w-24 h-24 relative bg-gray-50">
+                <img id="preview-img" src="" class="w-full h-full object-cover rounded">
+                <button onclick="clearAttachment()" class="absolute -top-2 -right-2 bg-black text-white rounded-full w-5 h-5 text-xs">×</button>
+            </div>
+
+            <div class="flex items-center gap-6 mb-3 font-semibold text-xs tracking-widest no-select overflow-x-auto">
+                <button onclick="setMode('chat')" id="btn-converse" class="text-black border-b-2 border-black pb-1 uppercase outline-none whitespace-nowrap">CONVERSE</button>
+                <button onclick="setMode('image')" id="btn-manifest" class="text-gray-400 hover:text-black transition uppercase outline-none flex items-center gap-2 whitespace-nowrap">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                    MANIFEST 4K
+                </button>
+            </div>
+            
+            <div class="flex items-center border border-gray-300 rounded-md p-2 shadow-sm bg-gray-50 relative">
+                <label for="file-input" class="cursor-pointer text-gray-400 hover:text-black transition pl-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
+                </label>
+                <input type="file" id="file-input" class="hidden" accept="image/*" onchange="handleFile(this)">
+
+                <input id="user-input" type="text" class="flex-1 bg-transparent py-2 px-3 text-gray-800 outline-none placeholder-gray-400 font-medium" placeholder="Speak to the Beast..." onkeypress="if(event.key === 'Enter') sendMessage()">
+                
+                <button onclick="sendMessage()" id="send-btn" class="p-2 bg-gray-200 text-gray-600 rounded hover:bg-gray-300 transition outline-none">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                </button>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        let currentMode = 'chat';
+        let attachedFile = null;
+        let percentageInterval = null;
+        let currentSessionId = null;
+
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
+
+        function loadHistory() {
+            const list = document.getElementById('history-list');
+            list.innerHTML = '';
+            const historyKeys = Object.keys(localStorage).filter(k => k.startsWith('BeastAI_Session_')).sort().reverse();
+            
+            if (historyKeys.length === 0) {
+                list.innerHTML = '<div class="text-xs text-gray-400 italic">No previous sessions.</div>';
+                return;
+            }
+
+            historyKeys.forEach(key => {
+                const sessionData = JSON.parse(localStorage.getItem(key));
+                if (!sessionData || sessionData.length < 1) return;
+                
+                const timestamp = key.replace('BeastAI_Session_', '');
+                const date = new Date(parseInt(timestamp)).toLocaleDateString(undefined, {month: 'short', day: 'numeric'});
+                
+                let firstMsg = "New Chat";
+                try {
+                    const firstEntry = sessionData.find(m => m.type === 'user');
+                    firstMsg = firstEntry ? firstEntry.message : "Manifestation";
+                    if (firstMsg.length > 25) firstMsg = firstMsg.substring(0, 25) + '...';
+                } catch(e) {}
+
+                const isActive = (key === currentSessionId);
+                const item = document.createElement('div');
+                item.className = `flex items-center gap-2 p-3 rounded-lg cursor-pointer transition no-select ${isActive ? 'bg-gray-200' : 'hover:bg-gray-100'}`;
+                item.onclick = () => loadSpecificSession(key);
+                
+                item.innerHTML = `
+                    <svg class="flex-shrink-0 text-gray-400" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20v-8m0 0V4m0 8h8m-8 0H4"></path></svg>
+                    <div class="flex-1">
+                        <div class="font-medium text-black truncate">${firstMsg}</div>
+                        <div class="text-xs text-gray-500">${date}</div>
+                    </div>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        function loadSpecificSession(sessionId) {
+            currentSessionId = sessionId;
+            const chatBox = document.getElementById('chat-box');
+            const welcomeBox = document.getElementById('welcome-box');
+            
+            welcomeBox.style.display = 'none';
+            chatBox.innerHTML = '';
+            chatBox.classList.replace('hidden', 'flex');
+
+            const sessionData = JSON.parse(localStorage.getItem(sessionId));
+            sessionData.forEach(entry => {
+                if (entry.type === 'user') appendUserMessageToUI(entry.message, entry.imgData);
+                else appendBeastMessageToUI(entry.message, entry.mode);
+            });
+            loadHistory(); 
+            if (window.innerWidth < 1024) toggleSidebar(); 
+        }
+
+        function saveMessageToHistory(type, message, imgData = null, mode = 'chat') {
+            if (!currentSessionId) currentSessionId = `BeastAI_Session_${Date.now()}`;
+            let currentSessionData = JSON.parse(localStorage.getItem(currentSessionId)) || [];
+            currentSessionData.push({ type, message, imgData, mode });
+            localStorage.setItem(currentSessionId, JSON.stringify(currentSessionData));
+            loadHistory(); 
+        }
+
+        function startNewChat() {
+            currentSessionId = null;
+            document.getElementById('chat-box').innerHTML = '';
+            document.getElementById('chat-box').classList.replace('flex', 'hidden');
+            document.getElementById('welcome-box').style.display = 'block';
+            document.getElementById('welcome-box').style.opacity = '1';
+            loadHistory();
+            if (window.innerWidth < 1024) toggleSidebar(); 
+        }
+
+        async function runPercentage(targetId) {
+            const el = document.getElementById(targetId);
+            const sendBtn = document.getElementById('send-btn');
+            sendBtn.disabled = true;
+            sendBtn.classList.replace('text-gray-600', 'text-gray-300');
+            
+            let start = 0;
+            return new Promise(resolve => {
+                percentageInterval = setInterval(() => {
+                    start += Math.floor(Math.random() * 5) + 1;
+                    if (start >= 100) { start = 100; clearInterval(percentageInterval); }
+                    el.innerText = start + '%';
+                }, 100);
+                resolve();
+            });
+        }
+
+        function stopPercentage() {
+            clearInterval(percentageInterval);
+            document.getElementById('loading-indicator').classList.replace('flex', 'hidden');
+            const sendBtn = document.getElementById('send-btn');
+            sendBtn.disabled = false;
+            sendBtn.classList.replace('text-gray-300', 'text-gray-600');
+        }
+
+        function setMode(mode) {
+            currentMode = mode;
+            document.getElementById('btn-converse').className = (mode === 'chat') ? "text-black border-b-2 border-black pb-1 uppercase outline-none whitespace-nowrap" : "text-gray-400 hover:text-black transition uppercase outline-none whitespace-nowrap";
+            document.getElementById('btn-manifest').className = (mode === 'image') ? "text-black border-b-2 border-black pb-1 uppercase outline-none flex items-center gap-2 whitespace-nowrap" : "text-gray-400 hover:text-black transition uppercase outline-none flex items-center gap-2 whitespace-nowrap";
+            document.getElementById('user-input').placeholder = (mode === 'image') ? "Describe the 4K manifestation..." : "Speak to the Beast...";
+            document.getElementById('loading-text').innerText = (mode === 'image') ? "(Manifesting...)" : "(Thinking...)";
+        }
+
+        async function downloadManifest(url, btnElement) {
+            try {
+                const originalText = btnElement.innerText;
+                btnElement.innerText = "DOWNLOADING...";
+                const response = await fetch(url);
+                const blob = await response.blob();
+                const blobUrl = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = blobUrl;
+                a.download = `Beast_4K_${Date.now()}.jpg`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(blobUrl);
+                
+                btnElement.innerText = "DOWNLOADED!";
+                setTimeout(() => { btnElement.innerText = originalText; }, 2000);
+            } catch (err) {
+                alert("Download failed. Your browser may be blocking the process.");
+                btnElement.innerText = "ERROR";
+            }
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('user-input');
+            const chatBox = document.getElementById('chat-box');
+            const welcomeBox = document.getElementById('welcome-box');
+            const message = input.value.trim();
+            
+            if (!message && !attachedFile) return;
+            input.value = '';
+
+            const currentImgData = attachedFile ? document.getElementById('preview-img').src : null;
+            
+            if (welcomeBox.style.display !== 'none') { welcomeBox.style.opacity = '0'; setTimeout(()=>{ welcomeBox.style.display='none'; }, 500); }
+            chatBox.classList.remove('hidden');
+            chatBox.classList.add('flex');
+            
+            appendUserMessageToUI(message, currentImgData);
+            saveMessageToHistory('user', message, currentImgData, currentMode);
+            
+            const formData = new FormData();
+            formData.append('message', message);
+            formData.append('mode', currentMode);
+            if (attachedFile) formData.append('file', attachedFile);
+
+            clearAttachment();
+            document.getElementById('loading-indicator').classList.replace('hidden', 'flex');
+            document.getElementById('loading-percent').innerText = '0%';
+            runPercentage('loading-percent');
+
+            try {
+                const response = await fetch('/api/chat', { method: 'POST', body: formData });
+                const data = await response.json();
+
+                if (currentMode === 'chat') {
+                    stopPercentage();
+                    appendBeastMessageToUI(data.reply, 'chat');
+                    saveMessageToHistory('beast', data.reply, null, 'chat');
+                } else if (data.reply && data.reply.startsWith('http')) {
+                    appendBeastMessageToUI(data.reply, 'image');
+                    saveMessageToHistory('beast', data.reply, null, 'image');
+                } else {
+                     stopPercentage();
+                     appendBeastMessageToUI(data.reply || "Connection interrupted.", 'error');
+                }
+            } catch (e) {
+                stopPercentage();
+                const errorMsg = "Network Error. Please check your connection and try again.";
+                appendBeastMessageToUI(errorMsg, 'error');
+                saveMessageToHistory('beast', errorMsg, null, 'error');
+            }
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        }
+
+        function appendUserMessageToUI(message, imgData) {
+            let html = `<div class="flex flex-col items-end w-full"><span class="text-xs font-bold text-gray-400 mb-1 tracking-widest no-select">YOU</span><div class="bg-gray-100 text-black px-6 py-4 rounded-2xl rounded-br-sm max-w-[80%] border border-gray-200 text-[15px] font-medium font-sans">${message}`;
+            if (imgData) html += `<br><img src="${imgData}" class="mt-2 rounded-lg max-h-40 border shadow-sm">`;
+            html += `</div></div>`;
+            document.getElementById('chat-box').innerHTML += html;
+        }
+
+        function appendBeastMessageToUI(message, mode) {
+            let beastContent = '';
+            const chatBox = document.getElementById('chat-box');
+
+            if (mode === 'image' && message.startsWith('http')) {
+                beastContent = `
+                <div class="border border-gray-200 p-2 bg-white shadow-sm rounded-lg relative group w-full max-w-2xl">
+                    <img src="${message}" class="w-full h-auto rounded" onload="stopPercentage()">
+                    <button onclick="downloadManifest('${message}', this)" class="absolute bottom-4 right-4 bg-black text-white px-4 py-2 text-xs tracking-widest rounded shadow hover:bg-gray-800 transition opacity-0 group-hover:opacity-100 flex items-center gap-2">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                        DOWNLOAD 4K
+                    </button>
+                </div>`;
+            } else if (mode === 'chat') {
+                beastContent = `<div class="text-gray-800 font-sans text-[15px] leading-relaxed font-medium">${message.replace(/\n/g, '<br>')}</div>`;
+            } else {
+                beastContent = `<div class="text-red-500 font-sans border border-red-200 bg-red-50 px-4 py-3 rounded-xl text-[15px]">${message}</div>`;
+            }
+
+            chatBox.innerHTML += `<div class="flex flex-col items-start w-full mt-4"><span class="text-xs font-bold text-black mb-1 tracking-widest no-select">BEAST</span>${beastContent}</div>`;
+        }
+
+        function handleFile(input) {
+            if (input.files && input.files[0]) {
+                attachedFile = input.files[0];
+                const reader = new FileReader();
+                reader.onload = e => {
+                    document.getElementById('preview-img').src = e.target.result;
+                    document.getElementById('attachment-preview').classList.remove('hidden');
+                };
+                reader.readAsDataURL(attachedFile);
+            }
+        }
+
+        function clearAttachment() {
+            attachedFile = null;
+            document.getElementById('file-input').value = '';
+            document.getElementById('attachment-preview').classList.add('hidden');
+        }
+
+        window.onload = loadHistory;
+    </script>
+</body>
+</html>

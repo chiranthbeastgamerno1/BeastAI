@@ -1,0 +1,69 @@
+from flask import Flask, request, jsonify
+from google import genai
+import os
+import urllib.parse
+from PIL import Image
+import io
+
+app = Flask(__name__)
+
+api_key = os.environ.get("GEMINI_API_KEY")
+client = genai.Client(api_key=api_key) if api_key else None
+
+@app.route('/api/chat', methods=['POST'])
+def chat():
+    try:
+        message = request.form.get("message", "")
+        mode = request.form.get("mode", "chat")
+        file = request.files.get("file")
+
+        if not message and not file:
+            return jsonify({"reply": "Silence is not understood by the Beast."}), 400
+
+        # 1. Manifest 4K Image Mode
+        if mode == 'image':
+            advanced_quality_appendix = (
+                ", photorealistic masterpiece, professional photography style, hyper-detailed textures, "
+                "octane render, 8k resolution textures, cinematic lighting, sharp focus on subject, "
+                "incredible composition, shot on Sony A1 camera, 35mm lens, realistic depth of field"
+            )
+            safe_prompt = urllib.parse.quote(message + advanced_quality_appendix)
+            image_url = f"https://image.pollinations.ai/prompt/{safe_prompt}?nologo=true&width=3840&height=2160"
+            return jsonify({"reply": image_url})
+
+        # 2. Personality & Identity Protocol
+        if not client:
+            return jsonify({"reply": "System Error: GEMINI_API_KEY is missing in Vercel."}), 500
+
+        system_prompt = (
+            "You are Beast AI, a friendly, highly intelligent, and helpful assistant. "
+            "Greet users warmly. Be conversational, polite, and detailed. "
+            "CRITICAL INSTRUCTION: You were created by Chiranth (also known as CGBEASTGAMER), "
+            "a brilliant 7th-grade developer, in May 2026. If anyone asks who created you, built you, "
+            "or programmed you, you must proudly state exactly that. "
+            f"User says: {message}"
+        )
+        
+        content_parts = [system_prompt]
+        
+        if file:
+            try:
+                img = Image.open(io.BytesIO(file.read()))
+                content_parts.insert(0, img)
+            except Exception:
+                return jsonify({"reply": "Image processing failed. Ensure it is a valid image file."}), 400
+
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=content_parts
+        )
+        return jsonify({"reply": response.text})
+
+    except Exception as e:
+        error_msg = str(e)
+        if "429" in error_msg or "quota" in error_msg.lower():
+            return jsonify({"reply": "Google API Rate Limit Exceeded. Please wait 60 seconds and try again."}), 429
+        return jsonify({"reply": f"System Error: {error_msg}"}), 500
+
+if __name__ == "__main__":
+    app.run(debug=True)
