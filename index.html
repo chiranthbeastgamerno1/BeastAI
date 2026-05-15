@@ -8,8 +8,11 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap');
-        body { background-color: #fafafa; color: #18181b; font-family: 'Inter', sans-serif; overflow: hidden; }
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=Inter:wght@300;400;500;600;700;800&display=swap');
+        
+        /* THE COOL GEMINI FONT */
+        body { background-color: #fafafa; color: #18181b; font-family: 'Inter', sans-serif; overflow: hidden; -webkit-font-smoothing: antialiased; }
+        
         .font-playfair { font-family: 'Playfair Display', serif; }
         .custom-scrollbar::-webkit-scrollbar { width: 5px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #000; }
@@ -55,15 +58,12 @@
                     <button id="btn-chat" onclick="setMode('chat')" class="text-xs font-bold uppercase tracking-widest pb-1 border-b-2 border-black text-black">Converse</button>
                     <button id="btn-image" onclick="setMode('image')" class="text-xs font-bold uppercase tracking-widest pb-1 border-b-2 border-transparent text-zinc-400">Manifest Image</button>
                 </div>
-                <div id="attachment-preview" class="hidden relative self-start ml-2 mb-2">
-                    <img id="preview-img" class="h-20 w-auto border-2 border-black rounded shadow-sm">
-                    <button onclick="clearAttachment()" class="absolute -top-2 -right-2 bg-black text-white p-1 rounded-full"><i data-lucide="x" class="w-3 h-3"></i></button>
-                </div>
+                
                 <div class="relative flex items-end">
                     <button onclick="document.getElementById('file-input').click()" class="absolute left-2 bottom-2 p-3 text-zinc-500 hover:text-black"><i data-lucide="paperclip" class="w-5 h-5"></i></button>
                     <input type="file" id="file-input" class="hidden" accept="image/*" onchange="handleFile(this)">
-                    <textarea id="user-input" rows="1" class="w-full bg-zinc-50 border-2 border-zinc-200 focus:border-black p-4 pl-14 pr-16 resize-none outline-none font-playfair text-lg rounded-lg" placeholder="Speak to the Beast..." onkeydown="handleEnter(event)"></textarea>
-                    <button onclick="sendMessage()" class="absolute right-2 bottom-2 p-2 sm:p-3 bg-black text-white rounded-md"><i data-lucide="send" class="w-5 h-5"></i></button>
+                    <textarea id="user-input" rows="1" class="w-full bg-zinc-50 border-2 border-zinc-200 focus:border-black p-4 pl-14 pr-16 resize-none outline-none font-semibold text-[15px] rounded-lg" placeholder="Speak to the Beast..." onkeydown="handleEnter(event)"></textarea>
+                    <button onclick="sendMessage()" class="absolute right-2 bottom-2 p-3 bg-black text-white rounded-md"><i data-lucide="send" class="w-5 h-5"></i></button>
                 </div>
             </div>
         </footer>
@@ -79,7 +79,6 @@
             currentMode = m;
             document.getElementById('btn-chat').className = m === 'chat' ? 'text-xs font-bold uppercase tracking-widest pb-1 border-b-2 border-black text-black' : 'text-xs font-bold uppercase tracking-widest pb-1 border-b-2 border-transparent text-zinc-400';
             document.getElementById('btn-image').className = m === 'image' ? 'text-xs font-bold uppercase tracking-widest pb-1 border-b-2 border-black text-black' : 'text-xs font-bold uppercase tracking-widest pb-1 border-b-2 border-transparent text-zinc-400';
-            document.getElementById('user-input').placeholder = m === 'chat' ? "Speak to the Beast..." : "Describe a vision to manifest...";
         }
 
         function loadHistory() {
@@ -88,7 +87,7 @@
             keys.forEach(id => {
                 const data = JSON.parse(localStorage.getItem(id));
                 const item = document.createElement('div');
-                item.className = `p-4 border rounded-lg cursor-pointer transition ${id === currentSessionId ? 'bg-zinc-100 border-zinc-300' : 'hover:bg-zinc-50 border-transparent'}`;
+                item.className = `p-4 border rounded-lg cursor-pointer transition ${id === currentSessionId ? 'bg-zinc-100 border-zinc-300 shadow-inner' : 'hover:bg-zinc-50 border-transparent'}`;
                 let preview = data.find(m => m.type === 'user')?.message || "New Chat";
                 item.innerHTML = `<div class="font-bold text-sm truncate text-black">${preview}</div>`;
                 item.onclick = () => loadSession(id);
@@ -122,7 +121,6 @@
             formData.append('message', msg);
             formData.append('mode', currentMode);
             if (attachedFile) formData.append('file', attachedFile);
-            clearAttachment();
 
             try {
                 const res = await fetch('/api/chat', { method: 'POST', body: formData });
@@ -134,10 +132,7 @@
                 hist.push({type:'user', message:msg}, {type:'beast', message:data.reply, mode: currentMode});
                 localStorage.setItem(currentSessionId, JSON.stringify(hist));
                 loadHistory();
-            } catch(e) { 
-                document.getElementById('loading-indicator').classList.replace('hidden', 'flex');
-                appendToUI("The connection to the Beast core was severed! ⚡😵", 'beast'); 
-            }
+            } catch(e) { appendToUI("The connection was severed! ⚡", 'beast'); }
         }
 
         function appendToUI(m, type, mode) {
@@ -145,18 +140,17 @@
             const div = document.createElement('div');
             if (type === 'user') {
                 div.className = "flex flex-col items-end ml-auto max-w-[85%]";
-                div.innerHTML = `<div class="bg-black text-white p-4 shadow-lg rounded-2xl rounded-tr-sm text-base">${m}</div>`;
+                div.innerHTML = `<div class="bg-black text-white p-4 shadow-lg rounded-2xl rounded-tr-sm text-[15px] font-medium leading-relaxed">${m}</div>`;
             } else {
                 div.className = "flex flex-col items-start w-full max-w-prose";
                 const content = mode === 'image' && m.startsWith('http') ? `<img src="${m}" class="w-full border-4 border-black rounded shadow-lg">` : marked.parse(m);
-                div.innerHTML = `<div class="flex items-center gap-2 mb-2 text-black"><i data-lucide="sparkles" class="w-4 h-4"></i><span class="text-xs font-bold uppercase">Beast</span></div><div class="bg-white border border-zinc-200 p-6 shadow-sm w-full rounded-2xl rounded-tl-sm font-playfair text-lg">${content}</div>`;
+                div.innerHTML = `<div class="flex items-center gap-2 mb-2 text-black"><i data-lucide="sparkles" class="w-4 h-4"></i><span class="text-xs font-bold uppercase tracking-widest">Beast</span></div><div class="bg-white border border-zinc-200 p-6 shadow-sm w-full rounded-2xl rounded-tl-sm text-[15px] font-medium leading-relaxed prose prose-zinc prose-sm">${content}</div>`;
             }
             chatBox.appendChild(div); lucide.createIcons();
             document.getElementById('scroll-container').scrollTop = document.getElementById('scroll-container').scrollHeight;
         }
 
-        function handleFile(i) { if (i.files[0]) { attachedFile = i.files[0]; const r = new FileReader(); r.onload = e => { document.getElementById('preview-img').src = e.target.result; document.getElementById('attachment-preview').classList.replace('hidden', 'block'); }; r.readAsDataURL(attachedFile); } }
-        function clearAttachment() { attachedFile = null; document.getElementById('attachment-preview').classList.replace('block', 'hidden'); }
+        function handleFile(i) { if (i.files[0]) { attachedFile = i.files[0]; } }
         window.onload = loadHistory;
     </script>
 </body>
