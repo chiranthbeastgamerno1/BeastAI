@@ -8,12 +8,18 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=Inter:wght@300;400;500;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@900&family=Inter:wght@400;500;600;700;800&display=swap');
         
-        /* THE COOL GEMINI FONT */
-        body { background-color: #fafafa; color: #18181b; font-family: 'Inter', sans-serif; overflow: hidden; -webkit-font-smoothing: antialiased; }
+        /* GLOBAL SANS-SERIF (COOL GEMINI FONT) */
+        body { 
+            background-color: #fafafa; 
+            color: #18181b; 
+            font-family: 'Inter', sans-serif; 
+            overflow: hidden; 
+            -webkit-font-smoothing: antialiased; 
+        }
         
-        .font-playfair { font-family: 'Playfair Display', serif; }
+        .font-beast-logo { font-family: 'Playfair Display', serif; }
         .custom-scrollbar::-webkit-scrollbar { width: 5px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #000; }
         .dot { display: inline-block; animation: bounce 1.4s infinite ease-in-out both; font-size: 2rem; color: #000; }
@@ -24,7 +30,7 @@
 
     <aside id="sidebar" class="fixed lg:relative top-0 left-0 h-full w-72 bg-white border-r border-zinc-200 p-6 flex flex-col z-30 transition-transform -translate-x-full lg:translate-x-0">
         <div class="flex items-center justify-between mb-8">
-            <span class="font-playfair text-xl font-bold uppercase tracking-widest text-black">HISTORY</span>
+            <span class="font-beast-logo text-xl font-bold uppercase tracking-widest text-black">HISTORY</span>
             <button onclick="toggleSidebar()" class="lg:hidden"><i data-lucide="x" class="w-6 h-6 text-zinc-400"></i></button>
         </div>
         <button onclick="startNewChat()" class="flex items-center gap-3 bg-black text-white p-4 rounded-lg text-sm font-bold hover:bg-zinc-800 transition mb-6 shadow-md">
@@ -37,13 +43,13 @@
     <div class="flex-1 flex flex-col min-w-0 bg-zinc-50">
         <header class="flex items-center justify-center px-6 py-5 bg-white border-b-2 border-black shadow-sm z-10 relative">
             <button onclick="toggleSidebar()" class="absolute left-4 lg:hidden"><i data-lucide="menu" class="w-6 h-6"></i></button>
-            <h1 class="text-3xl font-black uppercase tracking-[0.25em] text-black font-playfair">Beast Ai</h1>
+            <h1 class="text-3xl font-black uppercase tracking-[0.25em] text-black font-beast-logo">Beast Ai</h1>
         </header>
 
         <main id="scroll-container" class="flex-1 overflow-y-auto p-4 sm:p-8 custom-scrollbar">
             <div class="max-w-3xl mx-auto space-y-8 mt-4">
                 <div id="welcome-box" class="w-full max-w-md mx-auto text-center p-8 border-y border-zinc-300 bg-white text-zinc-600">
-                    <span class="font-playfair italic text-lg tracking-wide">Welcome to Beast Ai.<br>Pure, unadulterated intelligence.</span>
+                    <span class="italic text-lg tracking-wide">Welcome to Beast Ai.<br>Pure, unadulterated intelligence.</span>
                 </div>
                 <div id="chat-box" class="w-full space-y-10 hidden flex-col"></div>
                 <div id="loading-indicator" class="hidden flex-col items-start w-full">
@@ -67,91 +73,3 @@
                 </div>
             </div>
         </footer>
-    </div>
-
-    <script>
-        lucide.createIcons();
-        let currentMode = 'chat', attachedFile = null, currentSessionId = null;
-
-        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
-        function handleEnter(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }
-        function setMode(m) { 
-            currentMode = m;
-            document.getElementById('btn-chat').className = m === 'chat' ? 'text-xs font-bold uppercase tracking-widest pb-1 border-b-2 border-black text-black' : 'text-xs font-bold uppercase tracking-widest pb-1 border-b-2 border-transparent text-zinc-400';
-            document.getElementById('btn-image').className = m === 'image' ? 'text-xs font-bold uppercase tracking-widest pb-1 border-b-2 border-black text-black' : 'text-xs font-bold uppercase tracking-widest pb-1 border-b-2 border-transparent text-zinc-400';
-        }
-
-        function loadHistory() {
-            const list = document.getElementById('history-list'); list.innerHTML = '';
-            const keys = Object.keys(localStorage).filter(k => k.startsWith('BeastSession_')).sort().reverse();
-            keys.forEach(id => {
-                const data = JSON.parse(localStorage.getItem(id));
-                const item = document.createElement('div');
-                item.className = `p-4 border rounded-lg cursor-pointer transition ${id === currentSessionId ? 'bg-zinc-100 border-zinc-300 shadow-inner' : 'hover:bg-zinc-50 border-transparent'}`;
-                let preview = data.find(m => m.type === 'user')?.message || "New Chat";
-                item.innerHTML = `<div class="font-bold text-sm truncate text-black">${preview}</div>`;
-                item.onclick = () => loadSession(id);
-                list.appendChild(item);
-            });
-        }
-
-        function loadSession(id) {
-            currentSessionId = id;
-            const data = JSON.parse(localStorage.getItem(id));
-            document.getElementById('welcome-box').style.display = 'none';
-            const chatBox = document.getElementById('chat-box'); chatBox.innerHTML = ''; chatBox.classList.replace('hidden', 'flex');
-            data.forEach(m => appendToUI(m.message, m.type, m.mode));
-            if(window.innerWidth < 1024) toggleSidebar();
-            loadHistory();
-        }
-
-        function startNewChat() { currentSessionId = null; document.getElementById('chat-box').innerHTML = ''; document.getElementById('chat-box').classList.replace('flex', 'hidden'); document.getElementById('welcome-box').style.display = 'block'; if(window.innerWidth < 1024) toggleSidebar(); }
-
-        async function sendMessage() {
-            const input = document.getElementById('user-input'); const msg = input.value.trim();
-            if (!msg && !attachedFile) return;
-            input.value = ''; if (!currentSessionId) currentSessionId = "BeastSession_" + Date.now();
-            
-            document.getElementById('welcome-box').style.display = 'none';
-            document.getElementById('chat-box').classList.replace('hidden', 'flex');
-            appendToUI(msg, 'user');
-            document.getElementById('loading-indicator').classList.replace('hidden', 'flex');
-
-            const formData = new FormData();
-            formData.append('message', msg);
-            formData.append('mode', currentMode);
-            if (attachedFile) formData.append('file', attachedFile);
-
-            try {
-                const res = await fetch('/api/chat', { method: 'POST', body: formData });
-                const data = await res.json();
-                document.getElementById('loading-indicator').classList.replace('hidden', 'flex');
-                appendToUI(data.reply, 'beast', currentMode);
-                
-                let hist = JSON.parse(localStorage.getItem(currentSessionId)) || [];
-                hist.push({type:'user', message:msg}, {type:'beast', message:data.reply, mode: currentMode});
-                localStorage.setItem(currentSessionId, JSON.stringify(hist));
-                loadHistory();
-            } catch(e) { appendToUI("The connection was severed! ⚡", 'beast'); }
-        }
-
-        function appendToUI(m, type, mode) {
-            const chatBox = document.getElementById('chat-box');
-            const div = document.createElement('div');
-            if (type === 'user') {
-                div.className = "flex flex-col items-end ml-auto max-w-[85%]";
-                div.innerHTML = `<div class="bg-black text-white p-4 shadow-lg rounded-2xl rounded-tr-sm text-[15px] font-medium leading-relaxed">${m}</div>`;
-            } else {
-                div.className = "flex flex-col items-start w-full max-w-prose";
-                const content = mode === 'image' && m.startsWith('http') ? `<img src="${m}" class="w-full border-4 border-black rounded shadow-lg">` : marked.parse(m);
-                div.innerHTML = `<div class="flex items-center gap-2 mb-2 text-black"><i data-lucide="sparkles" class="w-4 h-4"></i><span class="text-xs font-bold uppercase tracking-widest">Beast</span></div><div class="bg-white border border-zinc-200 p-6 shadow-sm w-full rounded-2xl rounded-tl-sm text-[15px] font-medium leading-relaxed prose prose-zinc prose-sm">${content}</div>`;
-            }
-            chatBox.appendChild(div); lucide.createIcons();
-            document.getElementById('scroll-container').scrollTop = document.getElementById('scroll-container').scrollHeight;
-        }
-
-        function handleFile(i) { if (i.files[0]) { attachedFile = i.files[0]; } }
-        window.onload = loadHistory;
-    </script>
-</body>
-</html>
