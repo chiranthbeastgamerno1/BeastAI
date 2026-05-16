@@ -10,22 +10,17 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@900&family=Inter:wght@400;500;600;700;800&display=swap');
         
-        /* Clean Gemini Font */
         body { background-color: #fafafa; color: #18181b; font-family: 'Inter', sans-serif; overflow: hidden; -webkit-font-smoothing: antialiased; }
         .font-beast-logo { font-family: 'Playfair Display', serif; }
         
-        /* Scrollbar & Dots */
         .custom-scrollbar::-webkit-scrollbar { width: 5px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #d4d4d8; border-radius: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background-color: #000; }
         
-        .dot { display: inline-block; animation: bounce 1.4s infinite ease-in-out both; font-size: 2.5rem; line-height: 0.2; color: #000; margin-right: 2px; }
+        .dot { display: inline-block; animation: bounce 1.4s infinite ease-in-out both; font-size: 2.5rem; line-height: 0.2; margin-right: 2px; }
         .dot:nth-child(1) { animation-delay: -0.32s; }
         .dot:nth-child(2) { animation-delay: -0.16s; }
-        @keyframes bounce { 
-            0%, 80%, 100% { transform: translateY(0); } 
-            40% { transform: translateY(-8px); } 
-        }
+        @keyframes bounce { 0%, 80%, 100% { transform: translateY(0); } 40% { transform: translateY(-8px); } }
     </style>
 </head>
 <body class="flex h-[100dvh] w-full">
@@ -39,7 +34,7 @@
             <i data-lucide="plus-circle" class="w-5 h-5"></i> New Session
         </button>
         <nav id="history-list" class="flex-1 space-y-2 overflow-y-auto custom-scrollbar"></nav>
-        <div class="border-t pt-4 text-[10px] text-zinc-400 font-bold tracking-widest text-center uppercase">Beast Core v6.0</div>
+        <div class="border-t pt-4 text-[10px] text-zinc-400 font-bold tracking-widest text-center uppercase">Beast Core v6.5</div>
     </aside>
 
     <div class="flex-1 flex flex-col min-w-0 bg-zinc-50">
@@ -50,30 +45,14 @@
 
         <main id="scroll-container" class="flex-1 overflow-y-auto p-4 sm:p-8 custom-scrollbar">
             <div class="max-w-3xl mx-auto space-y-8 mt-4">
-                
                 <div id="welcome-box" class="w-full max-w-md mx-auto text-center p-8 border-y border-zinc-300 bg-white text-zinc-600 shadow-sm rounded-lg">
                     <span class="italic text-lg tracking-wide font-medium">Welcome to Beast Ai.<br>Pure, unadulterated intelligence.</span>
                 </div>
-                
                 <div id="chat-box" class="w-full space-y-10 hidden flex-col"></div>
-                
-                <div id="loading-indicator" class="hidden flex-col items-start w-full max-w-prose">
-                    <div class="flex items-center gap-2 mb-2 text-black">
-                        <i data-lucide="sparkles" class="w-4 h-4 animate-pulse"></i>
-                        <span id="loading-text" class="text-xs font-bold uppercase tracking-widest">Beast is thinking</span>
-                    </div>
-                    <div class="bg-white border border-zinc-200 p-6 sm:p-8 shadow-sm w-full rounded-2xl rounded-tl-sm flex items-center justify-between">
-                        <div class="flex items-end h-6">
-                            <span class="dot">.</span><span class="dot">.</span><span class="dot">.</span>
-                        </div>
-                        <span id="loading-percent" class="text-xs font-mono font-bold text-zinc-500 bg-zinc-100 px-3 py-1.5 rounded">0%</span>
-                    </div>
-                </div>
-
             </div>
         </main>
 
-        <footer class="bg-white border-t-2 border-black p-4 sm:p-6">
+        <footer class="bg-white border-t-2 border-black p-4 sm:p-6 z-20">
             <div class="max-w-3xl mx-auto flex flex-col gap-4">
                 <div class="flex gap-6 px-2">
                     <button id="btn-chat" onclick="setMode('chat')" class="text-xs font-bold uppercase tracking-widest pb-1 border-b-2 border-black text-black">Converse</button>
@@ -81,13 +60,13 @@
                 </div>
                 <div id="attachment-preview" class="hidden relative self-start ml-2 mb-2">
                     <img id="preview-img" class="h-20 w-auto border-2 border-black rounded shadow-sm">
-                    <button onclick="clearAttachment()" class="absolute -top-2 -right-2 bg-black text-white p-1 rounded-full"><i data-lucide="x" class="w-3 h-3"></i></button>
+                    <button onclick="clearAttachment()" class="absolute -top-2 -right-2 bg-black text-white p-1 rounded-full hover:bg-red-600 transition"><i data-lucide="x" class="w-3 h-3"></i></button>
                 </div>
                 <div class="relative flex items-end">
                     <button onclick="document.getElementById('file-input').click()" class="absolute left-2 bottom-2 p-3 text-zinc-500 hover:text-black"><i data-lucide="paperclip" class="w-5 h-5"></i></button>
                     <input type="file" id="file-input" class="hidden" accept="image/*" onchange="handleFile(this)">
                     <textarea id="user-input" rows="1" class="w-full bg-zinc-50 border-2 border-zinc-200 focus:border-black p-4 pl-14 pr-16 resize-none outline-none font-semibold text-[15px] rounded-lg" placeholder="Speak to the Beast..." onkeydown="handleEnter(event)"></textarea>
-                    <button onclick="sendMessage()" class="absolute right-2 bottom-2 p-3 bg-black text-white rounded-md hover:bg-zinc-800 transition"><i data-lucide="send" class="w-5 h-5"></i></button>
+                    <button id="send-btn" onclick="sendMessage()" class="absolute right-2 bottom-2 p-3 bg-black text-white rounded-md hover:bg-zinc-800 transition"><i data-lucide="send" class="w-5 h-5"></i></button>
                 </div>
             </div>
         </footer>
@@ -97,34 +76,15 @@
         lucide.createIcons();
         let currentMode = 'chat', attachedFile = null, currentSessionId = null, loadingInterval = null;
 
-        // ==========================================
-        // 🔑 THE 9-KEY LOAD BALANCER ARRAY
-        // Replace these with your actual AI Studio Keys!
-        // ==========================================
-        const API_KEYS = [
-            "YOUR_KEY_1",
-            "YOUR_KEY_2",
-            "YOUR_KEY_3",
-            "YOUR_KEY_4",
-            "YOUR_KEY_5",
-            "YOUR_KEY_6",
-            "YOUR_KEY_7",
-            "YOUR_KEY_8",
-            "YOUR_KEY_9"
-        ].filter(k => k && !k.includes("YOUR_KEY")); // This ignores empty placeholders
-
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
         function handleEnter(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }
-        
         function setMode(m) { 
             currentMode = m;
             document.getElementById('btn-chat').className = m === 'chat' ? 'text-xs font-bold uppercase tracking-widest pb-1 border-b-2 border-black text-black' : 'text-xs font-bold uppercase tracking-widest pb-1 border-b-2 border-transparent text-zinc-400 hover:text-zinc-600';
             document.getElementById('btn-image').className = m === 'image' ? 'text-xs font-bold uppercase tracking-widest pb-1 border-b-2 border-black text-black flex items-center gap-1.5' : 'text-xs font-bold uppercase tracking-widest pb-1 border-b-2 border-transparent text-zinc-400 flex items-center gap-1.5 hover:text-zinc-600';
             document.getElementById('user-input').placeholder = m === 'chat' ? "Speak to the Beast..." : "Describe a vision to manifest...";
-            document.getElementById('loading-text').innerText = m === 'chat' ? "Beast is thinking" : "Beast is manifesting";
         }
 
-        // --- HISTORY LOGIC (PIN & CLEAR) ---
         function loadHistory() {
             const list = document.getElementById('history-list'); list.innerHTML = '';
             const keys = Object.keys(localStorage).filter(k => k.startsWith('BeastSession_')).sort().reverse();
@@ -132,191 +92,134 @@
                 const session = JSON.parse(localStorage.getItem(id));
                 const item = document.createElement('div');
                 item.className = `group flex items-center justify-between p-3 border rounded-lg cursor-pointer transition ${id === currentSessionId ? 'bg-zinc-100 border-zinc-300 shadow-inner' : 'hover:bg-zinc-50 border-transparent'}`;
-                
                 const preview = session.messages?.[0]?.message || "Manifestation";
-                item.innerHTML = `
-                    <div class="font-bold text-sm truncate text-black flex-1" onclick="loadSession('${id}')">${preview}</div>
-                    <button onclick="togglePin('${id}', event)" class="ml-2 transition ${session.pinned ? 'text-black' : 'text-zinc-200 group-hover:text-zinc-400'}">
-                        <i data-lucide="pin" class="w-3 h-3 ${session.pinned ? 'fill-current' : ''}"></i>
-                    </button>
-                `;
+                item.innerHTML = `<div class="font-bold text-sm truncate text-black flex-1" onclick="loadSession('${id}')">${preview}</div><button onclick="togglePin('${id}', event)" class="ml-2 transition ${session.pinned ? 'text-black' : 'text-zinc-200 group-hover:text-zinc-400'}"><i data-lucide="pin" class="w-3 h-3 ${session.pinned ? 'fill-current' : ''}"></i></button>`;
                 list.appendChild(item);
             });
             lucide.createIcons();
         }
 
-        function togglePin(id, e) {
-            e.stopPropagation();
-            const session = JSON.parse(localStorage.getItem(id));
-            session.pinned = !session.pinned;
-            localStorage.setItem(id, JSON.stringify(session));
-            loadHistory();
-        }
-
-        function clearUnpinned() {
-            if(!confirm("Clear all unpinned chats?")) return;
-            const keys = Object.keys(localStorage).filter(k => k.startsWith('BeastSession_'));
-            keys.forEach(id => {
-                const session = JSON.parse(localStorage.getItem(id));
-                if(!session.pinned) localStorage.removeItem(id);
-            });
-            startNewChat();
-            loadHistory();
-        }
-
+        function togglePin(id, e) { e.stopPropagation(); const s = JSON.parse(localStorage.getItem(id)); s.pinned = !s.pinned; localStorage.setItem(id, JSON.stringify(s)); loadHistory(); }
+        function clearUnpinned() { if(!confirm("Clear all unpinned chats?")) return; const keys = Object.keys(localStorage).filter(k => k.startsWith('BeastSession_')); keys.forEach(id => { const s = JSON.parse(localStorage.getItem(id)); if(!s.pinned) localStorage.removeItem(id); }); startNewChat(); loadHistory(); }
+        
         function loadSession(id) {
-            currentSessionId = id;
-            const session = JSON.parse(localStorage.getItem(id));
+            currentSessionId = id; const session = JSON.parse(localStorage.getItem(id));
             document.getElementById('welcome-box').style.display = 'none';
             const chatBox = document.getElementById('chat-box'); chatBox.innerHTML = ''; chatBox.classList.replace('hidden', 'flex');
-            session.messages.forEach(m => appendToUI(m.message, m.type, m.mode));
+            session.messages.forEach(m => appendHistoryMessage(m));
             if(window.innerWidth < 1024) toggleSidebar();
             loadHistory();
         }
 
         function startNewChat() { currentSessionId = null; document.getElementById('chat-box').innerHTML = ''; document.getElementById('chat-box').classList.replace('flex', 'hidden'); document.getElementById('welcome-box').style.display = 'block'; }
 
-        // --- ANIMATION UI ---
-        function startLoading() {
-            document.getElementById('loading-indicator').classList.replace('hidden', 'flex');
-            let p = 0;
-            const pEl = document.getElementById('loading-percent');
-            pEl.innerText = "0%";
-            loadingInterval = setInterval(() => {
-                p += Math.floor(Math.random() * 8 + 2);
-                if (p > 99) p = 99;
-                pEl.innerText = p + "%";
-            }, 300);
-            document.getElementById('scroll-container').scrollTop = document.getElementById('scroll-container').scrollHeight;
-        }
-
-        function stopLoading() {
-            clearInterval(loadingInterval);
-            document.getElementById('loading-indicator').classList.replace('flex', 'hidden');
-        }
-
-        // --- THE ENGINE (NO PYTHON NEEDED!) ---
-        async function fetchFromGemini(promptText, base64Image, mimeType) {
-            if (API_KEYS.length === 0) return "System Error: You must add your API keys to the HTML file! ⚠️";
-
-            // Shuffle keys for Load Balancing
-            const shuffledKeys = [...API_KEYS].sort(() => Math.random() - 0.5);
-
-            const systemPrompt = "You are Beast Ai, a friendly, witty assistant. Created by Chiranth G (CGBEASTGAMER) in 2026. Give direct, concise answers like ChatGPT. ALWAYS use at least one emoji! 🚀🔥";
-            
-            let parts = [{ text: promptText || "Analyze this." }];
-            if (base64Image) {
-                parts.push({ inlineData: { mimeType: mimeType, data: base64Image } });
-            }
-
-            const payload = {
-                contents: [{ parts: parts }],
-                systemInstruction: { parts: [{ text: systemPrompt }] }
-            };
-
-            for (let key of shuffledKeys) {
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`;
-                try {
-                    const res = await fetch(url, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-                    
-                    if (res.status === 429) {
-                        console.warn(`Key exhausted. Trying next key...`);
-                        continue; // LIMIT HIT: Try the next key!
-                    }
-                    if (!res.ok) continue;
-
-                    const data = await res.json();
-                    return data.candidates?.[0]?.content?.parts?.[0]?.text || "Silence. 🤫";
-                } catch (err) { console.error(err); }
-            }
-
-            // PANIC-FREE MESSAGE: If the loop finishes, all keys are dead.
-            return "The Beast is resting! 💤 Daily limit reached across all nodes. Please come back tomorrow to chat more! 🦖✨";
-        }
-
-        async function fetchImageManifestation(promptText) {
-            // Free, Unlimited Image API (Since Google Imagen limits too fast)
-            const seed = Math.floor(Math.random() * 9999999);
-            const safePrompt = encodeURIComponent(promptText + ", masterpiece, high quality, 8k cinematic");
-            return `https://image.pollinations.ai/prompt/${safePrompt}?model=flux&nologo=true&seed=${seed}`;
-        }
-
         async function sendMessage() {
             const input = document.getElementById('user-input'); const msg = input.value.trim();
             if (!msg && !attachedFile) return;
-            
             input.value = ''; if (!currentSessionId) currentSessionId = "BeastSession_" + Date.now();
             
             document.getElementById('welcome-box').style.display = 'none';
-            document.getElementById('chat-box').classList.replace('hidden', 'flex');
-            
-            // Show User Message
+            const chatBox = document.getElementById('chat-box'); chatBox.classList.replace('hidden', 'flex');
+            document.getElementById('send-btn').disabled = true;
+
             const userImg = attachedFile ? document.getElementById('preview-img').src : null;
-            appendToUI(msg, 'user', 'chat', userImg);
-            
-            startLoading();
+            let userHtml = `<div class="flex flex-col items-end ml-auto max-w-[85%]"><div class="bg-black text-white p-5 shadow-lg rounded-2xl rounded-tr-sm text-[15px] font-medium leading-relaxed flex flex-col gap-3 items-end">`;
+            if (userImg) userHtml += `<img src="${userImg}" class="max-h-48 rounded border border-zinc-700">`;
+            if (msg) userHtml += `<span>${msg}</span>`;
+            userHtml += `</div></div>`;
+            chatBox.insertAdjacentHTML('beforeend', userHtml);
 
-            let replyTextOrUrl = "";
-            
-            try {
-                if (currentMode === 'image') {
-                    replyTextOrUrl = await fetchImageManifestation(msg);
-                } else {
-                    const b64 = attachedFile ? document.getElementById('preview-img').src.split(',')[1] : null;
-                    const mime = attachedFile ? attachedFile.type : null;
-                    replyTextOrUrl = await fetchFromGemini(msg, b64, mime);
-                }
-            } catch (e) {
-                replyTextOrUrl = "The connection to the Beast was severed! ⚡😵";
-            }
+            // Create the Box with dots inside
+            const msgId = Date.now();
+            const beastHtml = `
+                <div class="flex flex-col items-start w-full max-w-prose">
+                    <div class="flex items-center gap-2 mb-2 text-black">
+                        <i data-lucide="sparkles" class="w-4 h-4 ${currentMode === 'image' ? 'animate-pulse' : ''}"></i>
+                        <span class="text-xs font-bold uppercase tracking-widest">${currentMode === 'image' ? 'Beast is manifesting' : 'Beast is thinking'}</span>
+                    </div>
+                    <div id="beast-box-${msgId}" class="bg-white border border-zinc-200 p-6 sm:p-8 shadow-sm w-full rounded-2xl rounded-tl-sm text-[15px] font-medium leading-relaxed prose prose-zinc prose-sm break-words overflow-x-hidden transition-colors">
+                        <div id="loader-${msgId}" class="flex items-center justify-between w-full">
+                            <div class="flex items-end h-6 text-zinc-900"><span class="dot">.</span><span class="dot">.</span><span class="dot">.</span></div>
+                            <span id="percent-${msgId}" class="text-xs font-mono font-bold text-zinc-500 bg-zinc-100 px-3 py-1.5 rounded">0%</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            chatBox.insertAdjacentHTML('beforeend', beastHtml);
+            lucide.createIcons();
+            document.getElementById('scroll-container').scrollTop = document.getElementById('scroll-container').scrollHeight;
 
+            let p = 0; const pEl = document.getElementById(`percent-${msgId}`);
+            loadingInterval = setInterval(() => { p += Math.floor(Math.random() * 8 + 2); if (p > 99) p = 99; if(pEl) pEl.innerText = p + "%"; }, 300);
+
+            const formData = new FormData();
+            formData.append('message', msg);
+            formData.append('mode', currentMode);
+            if (attachedFile) formData.append('file', attachedFile);
             clearAttachment();
-            stopLoading();
+
+            try {
+                // Call Python Backend!
+                const res = await fetch('/api/chat', { method: 'POST', body: formData });
+                const data = await res.json();
+                clearInterval(loadingInterval);
+                
+                const targetBox = document.getElementById(`beast-box-${msgId}`);
+                let replyText = data.reply || "Connection severed.";
+                
+                // Panic-Free Red Box Logic
+                if (replyText.includes("resting") || replyText.includes("offline")) {
+                    targetBox.classList.replace('bg-white', 'bg-red-50');
+                    targetBox.classList.replace('border-zinc-200', 'border-red-900');
+                    targetBox.classList.add('text-red-900');
+                }
+
+                if (currentMode === 'image' && (replyText.startsWith('http') || replyText.startsWith('data:'))) {
+                    targetBox.innerHTML = `<div class="flex flex-col items-center gap-3"><img src="${replyText}" class="w-full border-4 border-black rounded shadow-lg"><a href="${replyText}" download="manifestation.jpg" class="px-4 py-2 bg-black text-white text-xs font-bold uppercase tracking-widest rounded flex items-center gap-2"><i data-lucide="download" class="w-4 h-4"></i> Save</a></div>`;
+                } else {
+                    targetBox.innerHTML = marked.parse(replyText);
+                    targetBox.querySelectorAll('pre').forEach(pre => pre.classList.add('bg-zinc-900', 'text-zinc-100', 'p-4', 'rounded-lg', 'overflow-x-auto', 'my-4'));
+                }
+                
+                let session = JSON.parse(localStorage.getItem(currentSessionId)) || { pinned: false, messages: [] };
+                session.messages.push({type:'user', message:msg, img: userImg}, {type:'beast', message:replyText, mode: currentMode});
+                localStorage.setItem(currentSessionId, JSON.stringify(session));
+                
+            } catch(e) { 
+                clearInterval(loadingInterval);
+                document.getElementById(`beast-box-${msgId}`).innerHTML = marked.parse("The connection was severed! ⚡😵"); 
+            }
             
-            appendToUI(replyTextOrUrl, 'beast', currentMode);
-            
-            // Save to Local History
-            let session = JSON.parse(localStorage.getItem(currentSessionId)) || { pinned: false, messages: [] };
-            session.messages.push({type:'user', message:msg, img: userImg}, {type:'beast', message:replyTextOrUrl, mode: currentMode});
-            localStorage.setItem(currentSessionId, JSON.stringify(session));
+            lucide.createIcons();
+            document.getElementById('send-btn').disabled = false;
+            document.getElementById('scroll-container').scrollTop = document.getElementById('scroll-container').scrollHeight;
             loadHistory();
         }
 
-        function appendToUI(m, type, mode, imgUrl = null) {
+        function appendHistoryMessage(m) {
             const chatBox = document.getElementById('chat-box');
-            const div = document.createElement('div');
-            
-            if (type === 'user') {
-                div.className = "flex flex-col items-end ml-auto max-w-[85%]";
-                let inner = `<div class="bg-black text-white p-5 shadow-lg rounded-2xl rounded-tr-sm text-[15px] font-medium leading-relaxed flex flex-col gap-3 items-end">`;
-                if (imgUrl) inner += `<img src="${imgUrl}" class="max-h-48 rounded border border-zinc-700">`;
-                if (m) inner += `<span>${m}</span>`;
-                inner += `</div>`;
-                div.innerHTML = inner;
+            if (m.type === 'user') {
+                let inner = `<div class="flex flex-col items-end ml-auto max-w-[85%]"><div class="bg-black text-white p-5 shadow-lg rounded-2xl rounded-tr-sm text-[15px] font-medium leading-relaxed flex flex-col gap-3 items-end">`;
+                if (m.img) inner += `<img src="${m.img}" class="max-h-48 rounded border border-zinc-700">`;
+                if (m.message) inner += `<span>${m.message}</span>`;
+                chatBox.insertAdjacentHTML('beforeend', inner + `</div></div>`);
             } else {
-                div.className = "flex flex-col items-start w-full max-w-prose";
-                const content = mode === 'image' && m.startsWith('http') ? `<img src="${m}" class="w-full border-4 border-black rounded shadow-lg">` : marked.parse(m);
-                div.innerHTML = `<div class="flex items-center gap-2 mb-2 text-black"><i data-lucide="sparkles" class="w-4 h-4"></i><span class="text-xs font-bold uppercase tracking-widest">Beast</span></div><div class="bg-white border border-zinc-200 p-6 shadow-sm w-full rounded-2xl rounded-tl-sm text-[15px] font-medium leading-relaxed prose prose-zinc prose-sm">${content}</div>`;
+                let boxClass = "bg-white border-zinc-200 text-zinc-900";
+                if (m.message.includes("resting") || m.message.includes("offline")) boxClass = "bg-red-50 border-red-900 text-red-900";
+                
+                let contentHtml = "";
+                if (m.mode === 'image' && (m.message.startsWith('http') || m.message.startsWith('data:'))) {
+                    contentHtml = `<div class="flex flex-col items-center gap-3"><img src="${m.message}" class="w-full border-4 border-black rounded shadow-lg"><a href="${m.message}" download="manifestation.jpg" class="px-4 py-2 bg-black text-white text-xs font-bold uppercase tracking-widest rounded flex items-center gap-2"><i data-lucide="download" class="w-4 h-4"></i> Save</a></div>`;
+                } else {
+                    contentHtml = marked.parse(m.message);
+                }
+                const html = `<div class="flex flex-col items-start w-full max-w-prose"><div class="flex items-center gap-2 mb-2 text-black"><i data-lucide="sparkles" class="w-4 h-4"></i><span class="text-xs font-bold uppercase tracking-widest">Beast</span></div><div class="border ${boxClass} p-6 sm:p-8 shadow-sm w-full rounded-2xl rounded-tl-sm text-[15px] font-medium leading-relaxed prose prose-sm break-words overflow-x-hidden">${contentHtml}</div></div>`;
+                chatBox.insertAdjacentHTML('beforeend', html);
+                chatBox.querySelectorAll('pre').forEach(pre => pre.classList.add('bg-zinc-900', 'text-zinc-100', 'p-4', 'rounded-lg', 'overflow-x-auto', 'my-4'));
             }
-            chatBox.appendChild(div); lucide.createIcons();
-            document.getElementById('scroll-container').scrollTop = document.getElementById('scroll-container').scrollHeight;
         }
 
-        function handleFile(i) { 
-            if (i.files[0]) { 
-                attachedFile = i.files[0]; 
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    document.getElementById('preview-img').src = e.target.result;
-                    document.getElementById('attachment-preview').classList.replace('hidden', 'block');
-                };
-                reader.readAsDataURL(attachedFile);
-            } 
-        }
+        function handleFile(i) { if (i.files[0]) { attachedFile = i.files[0]; const reader = new FileReader(); reader.onload = (e) => { document.getElementById('preview-img').src = e.target.result; document.getElementById('attachment-preview').classList.replace('hidden', 'block'); }; reader.readAsDataURL(attachedFile); } }
         function clearAttachment() { attachedFile = null; document.getElementById('file-input').value = ''; document.getElementById('attachment-preview').classList.replace('block', 'hidden'); }
         window.onload = loadHistory;
     </script>
