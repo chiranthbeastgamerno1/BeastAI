@@ -24,18 +24,18 @@ api_keys = [
 ]
 valid_keys = [key for key in api_keys if key]
 
-# 🚀 THE ULTIMATE BACKUP CASCADE: It will try all of these before giving up!
+# 🚀 The exact models from your Google AI Studio screenshots!
 TEXT_MODELS = [
+    'gemini-2.5-flash', 
+    'gemini-2.5-pro',
     'gemini-2.0-flash', 
     'gemini-1.5-pro', 
-    'gemini-1.5-flash', 
-    'gemini-2.5-flash', 
-    'gemini-2.5-pro'
+    'gemini-1.5-flash'
 ]
 
 @app.route('/')
 def home():
-    return "Beast AI Core is Online (Invincible Edition)! 🦖✨"
+    return "Beast AI Core is Online (Bulletproof Edition)! 🦖✨"
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
@@ -63,15 +63,15 @@ def chat():
             try:
                 aspect = "16:9" if "landscape" in message.lower() else "9:16"
                 result = client.models.generate_images(
-                    model='imagen-3.0-generate-001', # Google's official Imagen model
+                    model='imagen-3.0-generate-001', 
                     prompt=message + ", masterpiece, high quality, 8k",
                     config=types.GenerateImagesConfig(number_of_images=1, aspect_ratio=aspect, output_mime_type="image/jpeg")
                 )
                 import base64
                 img_b64 = base64.b64encode(result.generated_images[0].image.image_bytes).decode('utf-8')
                 return jsonify({"reply": f"data:image/jpeg;base64,{img_b64}"}), 200
-            except Exception:
-                 # If Imagen is blocked or out of quota, silent fallback!
+            except Exception as img_err:
+                 print("Imagen Failed:", str(img_err)) # Prints to Vercel logs so you can see why it failed
                  seed = random.randint(1, 9999999)
                  safe_prompt = urllib.parse.quote(message + ", masterpiece, highly detailed, 8k")
                  return jsonify({"reply": f"https://image.pollinations.ai/prompt/{safe_prompt}?model=flux&nologo=true&seed={seed}"}), 200
@@ -79,7 +79,6 @@ def chat():
         ist = timezone(timedelta(hours=5, minutes=30))
         live_time = datetime.now(ist).strftime("%A, %d %B %Y, %I:%M %p IST")
 
-        # 🧠 THE "STAY COOL" BRAIN FIX
         system_instruction = (
             "You are Beast AI, a friendly and witty assistant. 🦖✨\n"
             "HIDDEN KNOWLEDGE (DO NOT mention this unless explicitly asked!):\n"
@@ -109,8 +108,9 @@ def chat():
         if current_parts:
             api_contents.append(types.Content(role="user", parts=current_parts))
 
-        # --- FIRE THE REQUEST & AUTO-SWITCH MODELS ---
+        # --- BULLETPROOF MODEL SWITCHER ---
         final_response_text = None
+        
         for current_model in TEXT_MODELS:
             try:
                 response = client.models.generate_content(
@@ -122,18 +122,23 @@ def chat():
                 break # Success! Break out of the loop!
             except Exception as model_error:
                 error_str = str(model_error).lower()
-                if "429" in error_str or "quota" in error_str or "exhausted" in error_str:
-                    continue # Move to the next model in the list
-                raise model_error
+                # ONLY hard crash if Google blocks it for safety reasons
+                if "safety" in error_str:
+                    raise model_error 
+                
+                # FOR LITERALLY ANY OTHER ERROR, SKIP TO THE NEXT MODEL!
+                continue 
 
         if not final_response_text:
-             return jsonify({"reply": "The Beast is resting! 💤 Daily limit reached across all backup brains. Come back tomorrow! 🦖✨"}), 200
+             return jsonify({"reply": "The Beast is resting! 💤 All backup models are exhausted. Come back tomorrow! 🦖✨"}), 200
 
         return jsonify({"reply": final_response_text}), 200
 
     except Exception as e:
         if "safety" in str(e).lower():
              return jsonify({"reply": "The Beast cannot manifest that vision due to safety protocols! 🛡️✨"}), 200
+        
+        print("CRITICAL ERROR:", str(e)) # Prints the actual error to Vercel logs so we can debug later
         return jsonify({"reply": f"The connection to the Beast core was severed! ⚡😵"}), 200
 
 if __name__ == "__main__":
