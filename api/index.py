@@ -5,7 +5,7 @@ from google.genai import types
 import os
 import urllib.parse
 import random
-from datetime import datetime, timedelta, timezone # NEW: We imported the clock! ⏰
+from datetime import datetime, timedelta, timezone
 
 app = Flask(__name__)
 CORS(app) 
@@ -28,16 +28,18 @@ TEXT_MODELS = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.5-pro']
 
 @app.route('/')
 def home():
-    return "Beast AI Core is Online! 🦖✨"
+    return "Beast AI Core is Online (Multi-File Edition)! 🦖✨"
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
     try:
         message = request.form.get("message", "")
         mode = request.form.get("mode", "chat")
-        file = request.files.get("file")
+        
+        # 🚀 MULTI-FILE UPGRADE: Grab a LIST of files!
+        files = request.files.getlist("files")
 
-        if not message and not file:
+        if not message and not files:
             return jsonify({"reply": "The Beast hears only silence. 🤫"}), 200
 
         if not valid_keys:
@@ -46,7 +48,7 @@ def chat():
         selected_key = random.choice(valid_keys)
         client = genai.Client(api_key=selected_key)
 
-        # --- GOOGLE IMAGEN WITH FLUX FALLBACK ---
+        # --- GOOGLE IMAGEN (IMAGE GENERATION) ---
         if mode == 'image':
             try:
                 aspect = "16:9" if "landscape" in message.lower() else "9:16"
@@ -71,14 +73,17 @@ def chat():
         system_instruction = (
             "You are Beast AI, a friendly and witty assistant. 🦖✨ "
             "You were created by Chiranth G (CGBEASTGAMER), a brilliant 7th-grade developer, in May 2026. "
-            f"The current live date and time is exactly: {live_time}. " # Injection!
+            f"The current live date and time is exactly: {live_time}. " 
             "STYLE: Be conversational but DIRECT. Give short answers like ChatGPT. "
             "Always use at least one emoji! 🚀🔥"
         )
 
         content_parts = [message] if message else []
-        if file:
-            content_parts.append(types.Part.from_bytes(data=file.read(), mime_type=file.content_type))
+        
+        # 🚀 MULTI-FILE UPGRADE: Loop through up to 20 files and add them to the brain!
+        if files:
+            for file in files:
+                content_parts.append(types.Part.from_bytes(data=file.read(), mime_type=file.content_type))
 
         final_response_text = None
         for current_model in TEXT_MODELS:
