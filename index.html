@@ -34,7 +34,7 @@
             <i data-lucide="plus-circle" class="w-5 h-5"></i> New Session
         </button>
         <nav id="history-list" class="flex-1 space-y-2 overflow-y-auto custom-scrollbar"></nav>
-        <div class="border-t pt-4 text-[10px] text-zinc-400 font-bold tracking-widest text-center uppercase">Beast Core v9.5</div>
+        <div class="border-t pt-4 text-[10px] text-zinc-400 font-bold tracking-widest text-center uppercase">Beast Core v9.6</div>
     </aside>
 
     <div class="flex-1 flex flex-col min-w-0 bg-zinc-50">
@@ -73,7 +73,9 @@
 
     <script>
         lucide.createIcons();
-        let currentMode = 'chat', attachedFiles = [], currentSessionId = null, loadingInterval = null;
+        let currentMode = 'chat';
+        let attachedFiles = [];
+        let currentSessionId = null, loadingInterval = null;
 
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
         function handleEnter(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }
@@ -82,6 +84,39 @@
             document.getElementById('btn-chat').className = m === 'chat' ? 'text-xs font-bold uppercase tracking-widest pb-1 border-b-2 border-black text-black' : 'text-xs font-bold uppercase tracking-widest pb-1 border-b-2 border-transparent text-zinc-400 hover:text-zinc-600';
             document.getElementById('btn-image').className = m === 'image' ? 'text-xs font-bold uppercase tracking-widest pb-1 border-b-2 border-black text-black flex items-center gap-1.5' : 'text-xs font-bold uppercase tracking-widest pb-1 border-b-2 border-transparent text-zinc-400 flex items-center gap-1.5 hover:text-zinc-600';
             document.getElementById('user-input').placeholder = m === 'chat' ? "Speak to the Beast..." : "Describe a vision to manifest...";
+        }
+
+        // 🚀 FORCE DOWNLOAD FIX: Prevents zooming/getting stuck!
+        async function forceDownload(e, url) {
+            e.preventDefault();
+            const btn = e.currentTarget;
+            const originalHtml = btn.innerHTML;
+            
+            // Show loading state on button
+            btn.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Saving...`;
+            lucide.createIcons();
+
+            try {
+                const response = await fetch(url);
+                const blob = await response.blob();
+                const blobUrl = window.URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = blobUrl;
+                a.download = `Beast-Manifestation-${Date.now()}.jpg`;
+                document.body.appendChild(a);
+                a.click();
+                
+                window.URL.revokeObjectURL(blobUrl);
+                document.body.removeChild(a);
+            } catch (err) {
+                // If extremely strict CORS blocks it, fallback to opening safely in a NEW tab so you aren't trapped
+                window.open(url, '_blank');
+            }
+            
+            btn.innerHTML = originalHtml;
+            lucide.createIcons();
         }
 
         function loadHistory() {
@@ -185,18 +220,17 @@
                     targetBox.classList.replace('bg-white', 'bg-red-50'); targetBox.classList.replace('border-zinc-200', 'border-red-900'); targetBox.classList.add('text-red-900');
                     targetBox.innerHTML = marked.parse(replyText);
                 } 
-                // 🚀 THE PRE-LOADER FIX: Wait for the image to download BEFORE hiding the dots!
                 else if (currentMode === 'image' && (replyText.startsWith('http') || replyText.startsWith('data:'))) {
                     const img = new Image();
                     img.onload = () => {
                         clearInterval(loadingInterval);
-                        targetBox.innerHTML = `<div class="flex flex-col items-center gap-3"><img src="${replyText}" class="w-full border-4 border-black rounded shadow-lg"><a href="${replyText}" download="manifestation.jpg" class="px-4 py-2 bg-black text-white text-xs font-bold uppercase tracking-widest rounded flex items-center gap-2"><i data-lucide="download" class="w-4 h-4"></i> Save</a></div>`;
+                        targetBox.innerHTML = `<div class="flex flex-col items-center gap-3"><img src="${replyText}" class="w-full border-4 border-black rounded shadow-lg"><button onclick="forceDownload(event, '${replyText}')" class="px-4 py-2 bg-black text-white text-xs font-bold uppercase tracking-widest rounded flex items-center gap-2 transition hover:bg-zinc-800"><i data-lucide="download" class="w-4 h-4"></i> Save</button></div>`;
                         lucide.createIcons(); document.getElementById('scroll-container').scrollTop = document.getElementById('scroll-container').scrollHeight;
                     };
                     img.onerror = () => {
                         clearInterval(loadingInterval); targetBox.innerHTML = marked.parse("Failed to load the manifested image! 😵");
                     };
-                    img.src = replyText; // This triggers the download invisibly
+                    img.src = replyText; 
                 } else {
                     clearInterval(loadingInterval);
                     targetBox.innerHTML = marked.parse(replyText);
@@ -235,7 +269,7 @@
                 if (m.message.includes("resting") || m.message.includes("offline") || m.message.includes("severed")) boxClass = "bg-red-50 border-red-900 text-red-900";
                 let contentHtml = "";
                 if (m.mode === 'image' && (m.message.startsWith('http') || m.message.startsWith('data:'))) {
-                    contentHtml = `<div class="flex flex-col items-center gap-3"><img src="${m.message}" class="w-full border-4 border-black rounded shadow-lg"><a href="${m.message}" download="manifestation.jpg" class="px-4 py-2 bg-black text-white text-xs font-bold uppercase tracking-widest rounded flex items-center gap-2"><i data-lucide="download" class="w-4 h-4"></i> Save</a></div>`;
+                    contentHtml = `<div class="flex flex-col items-center gap-3"><img src="${m.message}" class="w-full border-4 border-black rounded shadow-lg"><button onclick="forceDownload(event, '${m.message}')" class="px-4 py-2 bg-black text-white text-xs font-bold uppercase tracking-widest rounded flex items-center gap-2 transition hover:bg-zinc-800"><i data-lucide="download" class="w-4 h-4"></i> Save</button></div>`;
                 } else { contentHtml = marked.parse(m.message); }
                 const html = `<div class="flex flex-col items-start w-full max-w-prose"><div class="flex items-center gap-2 mb-2 text-black"><i data-lucide="sparkles" class="w-4 h-4"></i><span class="text-xs font-bold uppercase tracking-widest">Beast</span></div><div class="border ${boxClass} p-6 sm:p-8 shadow-sm w-full rounded-2xl rounded-tl-sm text-[15px] font-medium leading-relaxed prose prose-sm break-words overflow-x-hidden">${contentHtml}</div></div>`;
                 chatBox.insertAdjacentHTML('beforeend', html);
