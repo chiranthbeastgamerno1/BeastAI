@@ -34,7 +34,7 @@
             <i data-lucide="plus-circle" class="w-5 h-5"></i> New Session
         </button>
         <nav id="history-list" class="flex-1 space-y-2 overflow-y-auto custom-scrollbar"></nav>
-        <div class="border-t pt-4 text-[10px] text-zinc-400 font-bold tracking-widest text-center uppercase">Beast Core v7.0</div>
+        <div class="border-t pt-4 text-[10px] text-zinc-400 font-bold tracking-widest text-center uppercase">Beast Core v8.0</div>
     </aside>
 
     <div class="flex-1 flex flex-col min-w-0 bg-zinc-50">
@@ -59,14 +59,11 @@
                     <button id="btn-image" onclick="setMode('image')" class="text-xs font-bold uppercase tracking-widest pb-1 border-b-2 border-transparent text-zinc-400 flex items-center gap-1.5"><i data-lucide="image" class="w-3 h-3"></i> Manifest Image</button>
                 </div>
                 
-                <div id="attachment-preview" class="hidden relative self-start ml-2 mb-2 flex gap-2 overflow-x-auto custom-scrollbar pb-2 max-w-full">
-                    </div>
+                <div id="attachment-preview" class="hidden relative self-start ml-2 mb-2 flex gap-2 overflow-x-auto custom-scrollbar pb-2 max-w-full"></div>
                 
                 <div class="relative flex items-end">
                     <button onclick="document.getElementById('file-input').click()" class="absolute left-2 bottom-2 p-3 text-zinc-500 hover:text-black"><i data-lucide="paperclip" class="w-5 h-5"></i></button>
-                    
                     <input type="file" id="file-input" class="hidden" accept="image/*,application/pdf" multiple onchange="handleFile(this)">
-                    
                     <textarea id="user-input" rows="1" class="w-full bg-zinc-50 border-2 border-zinc-200 focus:border-black p-4 pl-14 pr-16 resize-none outline-none font-semibold text-[15px] rounded-lg" placeholder="Speak to the Beast..." onkeydown="handleEnter(event)"></textarea>
                     <button id="send-btn" onclick="sendMessage()" class="absolute right-2 bottom-2 p-3 bg-black text-white rounded-md hover:bg-zinc-800 transition"><i data-lucide="send" class="w-5 h-5"></i></button>
                 </div>
@@ -77,7 +74,7 @@
     <script>
         lucide.createIcons();
         let currentMode = 'chat';
-        let attachedFiles = []; // NOW AN ARRAY!
+        let attachedFiles = [];
         let currentSessionId = null, loadingInterval = null;
 
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
@@ -117,6 +114,26 @@
 
         function startNewChat() { currentSessionId = null; document.getElementById('chat-box').innerHTML = ''; document.getElementById('chat-box').classList.replace('flex', 'hidden'); document.getElementById('welcome-box').style.display = 'block'; }
 
+        // 🚀 COMPRESSION SYSTEM: Shrinks large images before sending to Vercel!
+        async function compressImage(file, maxWidth = 1000) {
+            if (file.type === 'application/pdf' || !file.type.startsWith('image/')) return file;
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const scale = Math.min(maxWidth / img.width, 1);
+                    canvas.width = img.width * scale;
+                    canvas.height = img.height * scale;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    canvas.toBlob((blob) => {
+                        resolve(new File([blob], file.name, { type: 'image/jpeg' }));
+                    }, 'image/jpeg', 0.7); // 70% quality keeps it lightweight
+                };
+                img.src = URL.createObjectURL(file);
+            });
+        }
+
         async function sendMessage() {
             const input = document.getElementById('user-input'); const msg = input.value.trim();
             if (!msg && attachedFiles.length === 0) return;
@@ -126,10 +143,8 @@
             const chatBox = document.getElementById('chat-box'); chatBox.classList.replace('hidden', 'flex');
             document.getElementById('send-btn').disabled = true;
 
-            // 1. Append User Message (With up to 20 files!)
             const currentFilesSnapshot = attachedFiles.map(f => ({ name: f.name, isPdf: f.isPdf, preview: f.preview }));
             let userHtml = `<div class="flex flex-col items-end ml-auto max-w-[85%]"><div class="bg-black text-white p-5 shadow-lg rounded-2xl rounded-tr-sm text-[15px] font-medium leading-relaxed flex flex-col gap-3 items-end">`;
-            
             if (currentFilesSnapshot.length > 0) {
                 userHtml += `<div class="flex flex-wrap gap-2 justify-end">`;
                 currentFilesSnapshot.forEach(f => {
@@ -145,19 +160,12 @@
             userHtml += `</div></div>`;
             chatBox.insertAdjacentHTML('beforeend', userHtml);
 
-            // 2. Insert Beast Box
             const msgId = Date.now();
             const beastHtml = `
                 <div class="flex flex-col items-start w-full max-w-prose">
-                    <div class="flex items-center gap-2 mb-2 text-black">
-                        <i data-lucide="sparkles" class="w-4 h-4 ${currentMode === 'image' ? 'animate-pulse' : ''}"></i>
-                        <span class="text-xs font-bold uppercase tracking-widest">${currentMode === 'image' ? 'Beast is manifesting' : 'Beast is thinking'}</span>
-                    </div>
+                    <div class="flex items-center gap-2 mb-2 text-black"><i data-lucide="sparkles" class="w-4 h-4 ${currentMode === 'image' ? 'animate-pulse' : ''}"></i><span class="text-xs font-bold uppercase tracking-widest">${currentMode === 'image' ? 'Beast is manifesting' : 'Beast is thinking'}</span></div>
                     <div id="beast-box-${msgId}" class="bg-white border border-zinc-200 p-6 sm:p-8 shadow-sm w-full rounded-2xl rounded-tl-sm text-[15px] font-medium leading-relaxed prose prose-zinc prose-sm break-words overflow-x-hidden transition-colors">
-                        <div id="loader-${msgId}" class="flex items-center justify-between w-full">
-                            <div class="flex items-end h-6 text-zinc-900"><span class="dot">.</span><span class="dot">.</span><span class="dot">.</span></div>
-                            <span id="percent-${msgId}" class="text-xs font-mono font-bold text-zinc-500 bg-zinc-100 px-3 py-1.5 rounded">0%</span>
-                        </div>
+                        <div id="loader-${msgId}" class="flex items-center justify-between w-full"><div class="flex items-end h-6 text-zinc-900"><span class="dot">.</span><span class="dot">.</span><span class="dot">.</span></div><span id="percent-${msgId}" class="text-xs font-mono font-bold text-zinc-500 bg-zinc-100 px-3 py-1.5 rounded">0%</span></div>
                     </div>
                 </div>
             `;
@@ -168,13 +176,20 @@
             let p = 0; const pEl = document.getElementById(`percent-${msgId}`);
             loadingInterval = setInterval(() => { p += Math.floor(Math.random() * 8 + 2); if (p > 99) p = 99; if(pEl) pEl.innerText = p + "%"; }, 300);
 
-            // Build payload for Python (Appending multiple files!)
             const formData = new FormData();
             formData.append('message', msg);
             formData.append('mode', currentMode);
-            attachedFiles.forEach(f => {
-                formData.append('files', f.file);
-            });
+
+            // 🧠 MEMORY SYSTEM: Send the last 10 text messages so it remembers!
+            let session = JSON.parse(localStorage.getItem(currentSessionId)) || { pinned: false, messages: [] };
+            let chatHistory = session.messages.slice(-10).map(m => ({ type: m.type, message: m.message || "" }));
+            formData.append('history', JSON.stringify(chatHistory));
+
+            // Compress and append files
+            for (let i = 0; i < attachedFiles.length; i++) {
+                const compressedFile = await compressImage(attachedFiles[i].file);
+                formData.append('files', compressedFile);
+            }
             
             clearAllAttachments();
 
@@ -187,9 +202,7 @@
                 let replyText = data.reply || "Connection severed.";
                 
                 if (replyText.includes("resting") || replyText.includes("offline")) {
-                    targetBox.classList.replace('bg-white', 'bg-red-50');
-                    targetBox.classList.replace('border-zinc-200', 'border-red-900');
-                    targetBox.classList.add('text-red-900');
+                    targetBox.classList.replace('bg-white', 'bg-red-50'); targetBox.classList.replace('border-zinc-200', 'border-red-900'); targetBox.classList.add('text-red-900');
                 }
 
                 if (currentMode === 'image' && (replyText.startsWith('http') || replyText.startsWith('data:'))) {
@@ -199,7 +212,6 @@
                     targetBox.querySelectorAll('pre').forEach(pre => pre.classList.add('bg-zinc-900', 'text-zinc-100', 'p-4', 'rounded-lg', 'overflow-x-auto', 'my-4'));
                 }
                 
-                let session = JSON.parse(localStorage.getItem(currentSessionId)) || { pinned: false, messages: [] };
                 session.messages.push({type:'user', message:msg, files: currentFilesSnapshot}, {type:'beast', message:replyText, mode: currentMode});
                 localStorage.setItem(currentSessionId, JSON.stringify(session));
                 
@@ -208,65 +220,45 @@
                 document.getElementById(`beast-box-${msgId}`).innerHTML = marked.parse("The connection was severed! ⚡😵"); 
             }
             
-            lucide.createIcons();
-            document.getElementById('send-btn').disabled = false;
-            document.getElementById('scroll-container').scrollTop = document.getElementById('scroll-container').scrollHeight;
-            loadHistory();
+            lucide.createIcons(); document.getElementById('send-btn').disabled = false;
+            document.getElementById('scroll-container').scrollTop = document.getElementById('scroll-container').scrollHeight; loadHistory();
         }
 
         function appendHistoryMessage(m) {
             const chatBox = document.getElementById('chat-box');
             if (m.type === 'user') {
                 let inner = `<div class="flex flex-col items-end ml-auto max-w-[85%]"><div class="bg-black text-white p-5 shadow-lg rounded-2xl rounded-tr-sm text-[15px] font-medium leading-relaxed flex flex-col gap-3 items-end">`;
-                
                 if (m.files && m.files.length > 0) {
                     inner += `<div class="flex flex-wrap gap-2 justify-end">`;
                     m.files.forEach(f => {
-                        if (f.isPdf) {
-                            inner += `<div class="px-3 py-2 bg-red-900/80 rounded border border-red-500 text-xs font-bold flex items-center gap-2"><i data-lucide="file-text" class="w-4 h-4"></i> ${f.name}</div>`;
-                        } else {
-                            inner += `<img src="${f.preview}" class="max-h-32 rounded border border-zinc-700">`;
-                        }
+                        if (f.isPdf) { inner += `<div class="px-3 py-2 bg-red-900/80 rounded border border-red-500 text-xs font-bold flex items-center gap-2"><i data-lucide="file-text" class="w-4 h-4"></i> ${f.name}</div>`;
+                        } else { inner += `<img src="${f.preview}" class="max-h-32 rounded border border-zinc-700">`; }
                     });
                     inner += `</div>`;
                 }
-                
                 if (m.message) inner += `<span>${m.message}</span>`;
                 chatBox.insertAdjacentHTML('beforeend', inner + `</div></div>`);
             } else {
                 let boxClass = "bg-white border-zinc-200 text-zinc-900";
                 if (m.message.includes("resting") || m.message.includes("offline")) boxClass = "bg-red-50 border-red-900 text-red-900";
-                
                 let contentHtml = "";
                 if (m.mode === 'image' && (m.message.startsWith('http') || m.message.startsWith('data:'))) {
                     contentHtml = `<div class="flex flex-col items-center gap-3"><img src="${m.message}" class="w-full border-4 border-black rounded shadow-lg"><a href="${m.message}" download="manifestation.jpg" class="px-4 py-2 bg-black text-white text-xs font-bold uppercase tracking-widest rounded flex items-center gap-2"><i data-lucide="download" class="w-4 h-4"></i> Save</a></div>`;
-                } else {
-                    contentHtml = marked.parse(m.message);
-                }
+                } else { contentHtml = marked.parse(m.message); }
                 const html = `<div class="flex flex-col items-start w-full max-w-prose"><div class="flex items-center gap-2 mb-2 text-black"><i data-lucide="sparkles" class="w-4 h-4"></i><span class="text-xs font-bold uppercase tracking-widest">Beast</span></div><div class="border ${boxClass} p-6 sm:p-8 shadow-sm w-full rounded-2xl rounded-tl-sm text-[15px] font-medium leading-relaxed prose prose-sm break-words overflow-x-hidden">${contentHtml}</div></div>`;
                 chatBox.insertAdjacentHTML('beforeend', html);
                 chatBox.querySelectorAll('pre').forEach(pre => pre.classList.add('bg-zinc-900', 'text-zinc-100', 'p-4', 'rounded-lg', 'overflow-x-auto', 'my-4'));
             }
         }
 
-        // --- MULTI-FILE LOGIC ---
         function handleFile(inputElement) { 
             const newFiles = Array.from(inputElement.files);
-            if (attachedFiles.length + newFiles.length > 20) {
-                alert("The Beast can process a maximum of 20 files at once! 🦖");
-                return;
-            }
-
+            if (attachedFiles.length + newFiles.length > 20) { alert("The Beast can process a max of 20 files! 🦖"); return; }
             newFiles.forEach(file => {
                 const isPdf = file.type === 'application/pdf';
                 const reader = new FileReader();
                 reader.onload = (e) => {
-                    attachedFiles.push({
-                        file: file,
-                        preview: isPdf ? null : e.target.result,
-                        isPdf: isPdf,
-                        name: file.name
-                    });
+                    attachedFiles.push({ file: file, preview: isPdf ? null : e.target.result, isPdf: isPdf, name: file.name });
                     renderAttachmentPreviews();
                 };
                 reader.readAsDataURL(file);
@@ -275,42 +267,20 @@
         }
 
         function renderAttachmentPreviews() {
-            const container = document.getElementById('attachment-preview');
-            container.innerHTML = '';
-            
-            if (attachedFiles.length === 0) {
-                container.classList.replace('flex', 'hidden');
-                return;
-            }
+            const container = document.getElementById('attachment-preview'); container.innerHTML = '';
+            if (attachedFiles.length === 0) { container.classList.replace('flex', 'hidden'); return; }
             container.classList.replace('hidden', 'flex');
-
             attachedFiles.forEach((f, index) => {
-                const div = document.createElement('div');
-                div.className = "relative flex-shrink-0 inline-block";
-                
-                if (f.isPdf) {
-                    div.innerHTML = `<div class="h-16 w-16 bg-red-100 border-2 border-red-900 rounded flex items-center justify-center text-xs font-bold text-red-900 shadow-sm p-1 text-center overflow-hidden break-all leading-tight"><i data-lucide="file-text" class="w-4 h-4 mx-auto mb-1"></i>PDF</div>`;
-                } else {
-                    div.innerHTML = `<img src="${f.preview}" class="h-16 w-auto border-2 border-black rounded shadow-sm object-cover">`;
-                }
-                
+                const div = document.createElement('div'); div.className = "relative flex-shrink-0 inline-block";
+                if (f.isPdf) { div.innerHTML = `<div class="h-16 w-16 bg-red-100 border-2 border-red-900 rounded flex items-center justify-center text-xs font-bold text-red-900 shadow-sm p-1 text-center overflow-hidden break-all leading-tight"><i data-lucide="file-text" class="w-4 h-4 mx-auto mb-1"></i>PDF</div>`;
+                } else { div.innerHTML = `<img src="${f.preview}" class="h-16 w-auto border-2 border-black rounded shadow-sm object-cover">`; }
                 div.innerHTML += `<button onclick="removeSpecificAttachment(${index})" class="absolute -top-2 -right-2 bg-black text-white p-1 rounded-full hover:bg-red-600 transition shadow-md z-10"><i data-lucide="x" class="w-3 h-3"></i></button>`;
                 container.appendChild(div);
             });
             lucide.createIcons();
         }
-
-        function removeSpecificAttachment(index) {
-            attachedFiles.splice(index, 1);
-            renderAttachmentPreviews();
-        }
-
-        function clearAllAttachments() { 
-            attachedFiles = []; 
-            document.getElementById('file-input').value = ''; 
-            renderAttachmentPreviews(); 
-        }
-
+        function removeSpecificAttachment(index) { attachedFiles.splice(index, 1); renderAttachmentPreviews(); }
+        function clearAllAttachments() { attachedFiles = []; document.getElementById('file-input').value = ''; renderAttachmentPreviews(); }
         window.onload = loadHistory;
     </script>
 </body>
