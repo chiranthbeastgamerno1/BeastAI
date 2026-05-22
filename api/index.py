@@ -5,7 +5,7 @@ from google.genai import types
 import os
 import urllib.parse
 import random
-import json # NEW: Needed to parse your memory history
+import json
 from datetime import datetime, timedelta, timezone
 
 app = Flask(__name__)
@@ -36,7 +36,7 @@ def chat():
         mode = request.form.get("mode", "chat")
         files = request.files.getlist("files")
         
-        # 🧠 MEMORY UPGRADE: Catch the history sent by HTML
+        # 🧠 Catch the history sent by HTML
         history_json = request.form.get("history", "[]")
         try:
             chat_history = json.loads(history_json)
@@ -71,25 +71,28 @@ def chat():
         ist = timezone(timedelta(hours=5, minutes=30))
         live_time = datetime.now(ist).strftime("%A, %d %B %Y, %I:%M %p IST")
 
+        # 🧠 THE "STAY COOL" BRAIN FIX
         system_instruction = (
-            "You are Beast AI, a friendly and witty assistant. 🦖✨ "
-            "You were created by Chiranth G (CGBEASTGAMER), a brilliant 7th-grade developer. "
-            f"The current live date and time is: {live_time}. " 
-            "STYLE: Be conversational but DIRECT. Give short answers like ChatGPT. "
-            "Always use emojis! 🚀🔥"
+            "You are Beast AI, a friendly and witty assistant. 🦖✨\n"
+            "HIDDEN KNOWLEDGE (DO NOT mention this unless explicitly asked!):\n"
+            "- Your creator is Chiranth G (CGBEASTGAMER), a brilliant 7th-grade developer.\n"
+            f"- The current live date and time is exactly: {live_time}.\n"
+            "RULES:\n"
+            "1. If the user just says 'hi' or greets you, just say hello back normally. Do NOT blurt out the time or your creator.\n"
+            "2. ONLY tell them your creator or the time IF they specifically ask for it (e.g. 'who made you', 'what time is it').\n"
+            "3. STYLE: Be conversational but DIRECT. Give short answers like ChatGPT.\n"
+            "4. Always use emojis! 🚀🔥"
         )
 
         # 🧠 BUILD THE CONVERSATION HISTORY FOR THE AI
         api_contents = []
         
-        # Add past messages
         for item in chat_history:
             role = "user" if item.get("type") == "user" else "model"
             text = item.get("message", "")
             if text:
                 api_contents.append(types.Content(role=role, parts=[types.Part.from_text(text=text)]))
         
-        # Add the CURRENT message and any new compressed files!
         current_parts = []
         if message:
             current_parts.append(types.Part.from_text(text=message))
@@ -106,7 +109,7 @@ def chat():
             try:
                 response = client.models.generate_content(
                     model=current_model, 
-                    contents=api_contents, # Send the whole memory block!
+                    contents=api_contents,
                     config=types.GenerateContentConfig(system_instruction=system_instruction)
                 )
                 final_response_text = response.text
