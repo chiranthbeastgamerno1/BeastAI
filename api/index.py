@@ -23,11 +23,19 @@ api_keys = [
     os.environ.get("GEMINI_API_KEY_9")
 ]
 valid_keys = [key for key in api_keys if key]
-TEXT_MODELS = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.5-pro']
+
+# 🚀 THE ULTIMATE BACKUP CASCADE: It will try all of these before giving up!
+TEXT_MODELS = [
+    'gemini-2.0-flash', 
+    'gemini-1.5-pro', 
+    'gemini-1.5-flash', 
+    'gemini-2.5-flash', 
+    'gemini-2.5-pro'
+]
 
 @app.route('/')
 def home():
-    return "Beast AI Core is Online (Memory Edition)! 🦖✨"
+    return "Beast AI Core is Online (Invincible Edition)! 🦖✨"
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
@@ -36,7 +44,6 @@ def chat():
         mode = request.form.get("mode", "chat")
         files = request.files.getlist("files")
         
-        # 🧠 Catch the history sent by HTML
         history_json = request.form.get("history", "[]")
         try:
             chat_history = json.loads(history_json)
@@ -51,12 +58,12 @@ def chat():
 
         client = genai.Client(api_key=random.choice(valid_keys))
 
-        # --- IMAGE GENERATION ---
+        # --- GOOGLE IMAGEN GENERATION ---
         if mode == 'image':
             try:
                 aspect = "16:9" if "landscape" in message.lower() else "9:16"
                 result = client.models.generate_images(
-                    model='imagen-4.0-generate-001', 
+                    model='imagen-3.0-generate-001', # Google's official Imagen model
                     prompt=message + ", masterpiece, high quality, 8k",
                     config=types.GenerateImagesConfig(number_of_images=1, aspect_ratio=aspect, output_mime_type="image/jpeg")
                 )
@@ -64,6 +71,7 @@ def chat():
                 img_b64 = base64.b64encode(result.generated_images[0].image.image_bytes).decode('utf-8')
                 return jsonify({"reply": f"data:image/jpeg;base64,{img_b64}"}), 200
             except Exception:
+                 # If Imagen is blocked or out of quota, silent fallback!
                  seed = random.randint(1, 9999999)
                  safe_prompt = urllib.parse.quote(message + ", masterpiece, highly detailed, 8k")
                  return jsonify({"reply": f"https://image.pollinations.ai/prompt/{safe_prompt}?model=flux&nologo=true&seed={seed}"}), 200
@@ -79,14 +87,12 @@ def chat():
             f"- The current live date and time is exactly: {live_time}.\n"
             "RULES:\n"
             "1. If the user just says 'hi' or greets you, just say hello back normally. Do NOT blurt out the time or your creator.\n"
-            "2. ONLY tell them your creator or the time IF they specifically ask for it (e.g. 'who made you', 'what time is it').\n"
+            "2. ONLY tell them your creator or the time IF they specifically ask for it.\n"
             "3. STYLE: Be conversational but DIRECT. Give short answers like ChatGPT.\n"
             "4. Always use emojis! 🚀🔥"
         )
 
-        # 🧠 BUILD THE CONVERSATION HISTORY FOR THE AI
         api_contents = []
-        
         for item in chat_history:
             role = "user" if item.get("type") == "user" else "model"
             text = item.get("message", "")
@@ -103,7 +109,7 @@ def chat():
         if current_parts:
             api_contents.append(types.Content(role="user", parts=current_parts))
 
-        # --- FIRE THE REQUEST ---
+        # --- FIRE THE REQUEST & AUTO-SWITCH MODELS ---
         final_response_text = None
         for current_model in TEXT_MODELS:
             try:
@@ -113,15 +119,15 @@ def chat():
                     config=types.GenerateContentConfig(system_instruction=system_instruction)
                 )
                 final_response_text = response.text
-                break
+                break # Success! Break out of the loop!
             except Exception as model_error:
                 error_str = str(model_error).lower()
                 if "429" in error_str or "quota" in error_str or "exhausted" in error_str:
-                    continue 
+                    continue # Move to the next model in the list
                 raise model_error
 
         if not final_response_text:
-             return jsonify({"reply": "The Beast is resting! 💤 Daily limit reached. Come back tomorrow! 🦖✨"}), 200
+             return jsonify({"reply": "The Beast is resting! 💤 Daily limit reached across all backup brains. Come back tomorrow! 🦖✨"}), 200
 
         return jsonify({"reply": final_response_text}), 200
 
