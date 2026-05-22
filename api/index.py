@@ -24,7 +24,6 @@ api_keys = [
 ]
 valid_keys = [key for key in api_keys if key]
 
-# 🚀 The exact models from your Google AI Studio screenshots!
 TEXT_MODELS = [
     'gemini-2.5-flash', 
     'gemini-2.5-pro',
@@ -35,7 +34,7 @@ TEXT_MODELS = [
 
 @app.route('/')
 def home():
-    return "Beast AI Core is Online (Bulletproof Edition)! 🦖✨"
+    return "Beast AI Core is Online (Ultra HD Edition)! 🦖✨"
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
@@ -58,23 +57,35 @@ def chat():
 
         client = genai.Client(api_key=random.choice(valid_keys))
 
-        # --- GOOGLE IMAGEN GENERATION ---
+        # --- THE HD IMAGE GENERATOR ---
         if mode == 'image':
+            # 1. Figure out if the user wants landscape or portrait
+            is_landscape = "landscape" in message.lower() or "widescreen" in message.lower()
+            aspect = "16:9" if is_landscape else "9:16"
+            
+            # 2. Set strict Full HD dimensions for the fallback
+            width = 1920 if is_landscape else 1080
+            height = 1080 if is_landscape else 1920
+
             try:
-                aspect = "16:9" if "landscape" in message.lower() else "9:16"
+                # Try Google's official model first
                 result = client.models.generate_images(
                     model='imagen-3.0-generate-001', 
-                    prompt=message + ", masterpiece, high quality, 8k",
+                    prompt=message + ", masterpiece, incredibly highly detailed, 8k resolution, crisp",
                     config=types.GenerateImagesConfig(number_of_images=1, aspect_ratio=aspect, output_mime_type="image/jpeg")
                 )
                 import base64
                 img_b64 = base64.b64encode(result.generated_images[0].image.image_bytes).decode('utf-8')
                 return jsonify({"reply": f"data:image/jpeg;base64,{img_b64}"}), 200
+            
             except Exception as img_err:
-                 print("Imagen Failed:", str(img_err)) # Prints to Vercel logs so you can see why it failed
+                 print("Imagen Failed (Likely Vercel Timeout):", str(img_err))
+                 # 3. If Imagen fails, force the fallback to use Full HD Width & Height!
                  seed = random.randint(1, 9999999)
-                 safe_prompt = urllib.parse.quote(message + ", masterpiece, highly detailed, 8k")
-                 return jsonify({"reply": f"https://image.pollinations.ai/prompt/{safe_prompt}?model=flux&nologo=true&seed={seed}"}), 200
+                 safe_prompt = urllib.parse.quote(message + ", masterpiece, insanely detailed, sharp focus, 8k resolution")
+                 hd_image_url = f"https://image.pollinations.ai/prompt/{safe_prompt}?model=flux&nologo=true&seed={seed}&width={width}&height={height}"
+                 
+                 return jsonify({"reply": hd_image_url}), 200
 
         ist = timezone(timedelta(hours=5, minutes=30))
         live_time = datetime.now(ist).strftime("%A, %d %B %Y, %I:%M %p IST")
@@ -82,10 +93,10 @@ def chat():
         system_instruction = (
             "You are Beast AI, a friendly and witty assistant. 🦖✨\n"
             "HIDDEN KNOWLEDGE (DO NOT mention this unless explicitly asked!):\n"
-            "- Your creator is Chiranth G (CGBEASTGAMER), a brilliant 7th-grade developer.\n"
+            "- Your creator is Chiranth G (CGBEASTGAMER), a brilliant developer.\n"
             f"- The current live date and time is exactly: {live_time}.\n"
             "RULES:\n"
-            "1. If the user just says 'hi' or greets you, just say hello back normally. Do NOT blurt out the time or your creator.\n"
+            "1. If the user greets you, just say hello back normally. Do NOT blurt out the time or your creator.\n"
             "2. ONLY tell them your creator or the time IF they specifically ask for it.\n"
             "3. STYLE: Be conversational but DIRECT. Give short answers like ChatGPT.\n"
             "4. Always use emojis! 🚀🔥"
@@ -119,14 +130,11 @@ def chat():
                     config=types.GenerateContentConfig(system_instruction=system_instruction)
                 )
                 final_response_text = response.text
-                break # Success! Break out of the loop!
+                break
             except Exception as model_error:
                 error_str = str(model_error).lower()
-                # ONLY hard crash if Google blocks it for safety reasons
                 if "safety" in error_str:
                     raise model_error 
-                
-                # FOR LITERALLY ANY OTHER ERROR, SKIP TO THE NEXT MODEL!
                 continue 
 
         if not final_response_text:
@@ -138,7 +146,7 @@ def chat():
         if "safety" in str(e).lower():
              return jsonify({"reply": "The Beast cannot manifest that vision due to safety protocols! 🛡️✨"}), 200
         
-        print("CRITICAL ERROR:", str(e)) # Prints the actual error to Vercel logs so we can debug later
+        print("CRITICAL ERROR:", str(e)) 
         return jsonify({"reply": f"The connection to the Beast core was severed! ⚡😵"}), 200
 
 if __name__ == "__main__":
