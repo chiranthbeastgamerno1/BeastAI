@@ -34,7 +34,7 @@
             <i data-lucide="plus-circle" class="w-5 h-5"></i> New Session
         </button>
         <nav id="history-list" class="flex-1 space-y-2 overflow-y-auto custom-scrollbar"></nav>
-        <div class="border-t pt-4 text-[10px] text-zinc-400 font-bold tracking-widest text-center uppercase">Beast Core v9.7</div>
+        <div class="border-t pt-4 text-[10px] text-zinc-400 font-bold tracking-widest text-center uppercase">Beast Core v9.8</div>
     </aside>
 
     <div class="flex-1 flex flex-col min-w-0 bg-zinc-50">
@@ -84,6 +84,56 @@
             document.getElementById('btn-chat').className = m === 'chat' ? 'text-xs font-bold uppercase tracking-widest pb-1 border-b-2 border-black text-black' : 'text-xs font-bold uppercase tracking-widest pb-1 border-b-2 border-transparent text-zinc-400 hover:text-zinc-600';
             document.getElementById('btn-image').className = m === 'image' ? 'text-xs font-bold uppercase tracking-widest pb-1 border-b-2 border-black text-black flex items-center gap-1.5' : 'text-xs font-bold uppercase tracking-widest pb-1 border-b-2 border-transparent text-zinc-400 flex items-center gap-1.5 hover:text-zinc-600';
             document.getElementById('user-input').placeholder = m === 'chat' ? "Speak to the Beast..." : "Describe a vision to manifest...";
+        }
+
+        // 🚀 TRUE 1-CLICK DOWNLOAD LOGIC
+        async function forceDownload(e, url) {
+            e.preventDefault();
+            const btn = e.currentTarget;
+            
+            // Show loading state so you know it clicked
+            btn.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Downloading...`;
+            lucide.createIcons();
+
+            try {
+                // Silently pull the image data in the background
+                const response = await fetch(url);
+                const blob = await response.blob();
+                const blobUrl = window.URL.createObjectURL(blob);
+                
+                // Trigger a native silent download
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = blobUrl;
+                a.download = `Beast-Image-${Date.now()}.jpg`;
+                document.body.appendChild(a);
+                a.click();
+                
+                window.URL.revokeObjectURL(blobUrl);
+                document.body.removeChild(a);
+            } catch (err) {
+                // Absolute fallback if strict CORS blocks the fetch: Use a Canvas drop
+                const img = new Image();
+                img.crossOrigin = "Anonymous";
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width; canvas.height = img.height;
+                    canvas.getContext('2d').drawImage(img, 0, 0);
+                    canvas.toBlob((b) => {
+                        const a = document.createElement('a');
+                        a.href = URL.createObjectURL(b);
+                        a.download = `Beast-Image-${Date.now()}.jpg`;
+                        a.click();
+                    }, 'image/jpeg');
+                };
+                img.src = url;
+            }
+            
+            // Reset button
+            setTimeout(() => {
+                btn.innerHTML = `<i data-lucide="download" class="w-4 h-4"></i> Download`;
+                lucide.createIcons();
+            }, 1000);
         }
 
         function loadHistory() {
@@ -191,13 +241,12 @@
                     const img = new Image();
                     img.onload = () => {
                         clearInterval(loadingInterval);
-                        // 🛠️ THE FIX: max-h-[45vh] stops the zoom. target="_blank" stops the browser trap!
                         targetBox.innerHTML = `
                         <div class="flex flex-col items-center gap-4 w-full">
                             <img src="${replyText}" class="max-w-full max-h-[45vh] w-auto object-contain border-4 border-black rounded shadow-lg">
-                            <a href="${replyText}" target="_blank" rel="noopener noreferrer" class="px-5 py-2.5 bg-black text-white text-xs font-bold uppercase tracking-widest rounded-md flex items-center gap-2 transition hover:bg-zinc-800">
-                                <i data-lucide="external-link" class="w-4 h-4"></i> Open & Save
-                            </a>
+                            <button onclick="forceDownload(event, '${replyText}')" class="px-5 py-2.5 bg-black text-white text-xs font-bold uppercase tracking-widest rounded-md flex items-center gap-2 transition hover:bg-zinc-800">
+                                <i data-lucide="download" class="w-4 h-4"></i> Download
+                            </button>
                         </div>`;
                         lucide.createIcons(); document.getElementById('scroll-container').scrollTop = document.getElementById('scroll-container').scrollHeight;
                     };
@@ -243,13 +292,12 @@
                 if (m.message.includes("resting") || m.message.includes("offline") || m.message.includes("severed")) boxClass = "bg-red-50 border-red-900 text-red-900";
                 let contentHtml = "";
                 if (m.mode === 'image' && (m.message.startsWith('http') || m.message.startsWith('data:'))) {
-                    // 🛠️ THE FIX FOR HISTORY TOO!
                     contentHtml = `
                     <div class="flex flex-col items-center gap-4 w-full">
                         <img src="${m.message}" class="max-w-full max-h-[45vh] w-auto object-contain border-4 border-black rounded shadow-lg">
-                        <a href="${m.message}" target="_blank" rel="noopener noreferrer" class="px-5 py-2.5 bg-black text-white text-xs font-bold uppercase tracking-widest rounded-md flex items-center gap-2 transition hover:bg-zinc-800">
-                            <i data-lucide="external-link" class="w-4 h-4"></i> Open & Save
-                        </a>
+                        <button onclick="forceDownload(event, '${m.message}')" class="px-5 py-2.5 bg-black text-white text-xs font-bold uppercase tracking-widest rounded-md flex items-center gap-2 transition hover:bg-zinc-800">
+                            <i data-lucide="download" class="w-4 h-4"></i> Download
+                        </button>
                     </div>`;
                 } else { contentHtml = marked.parse(m.message); }
                 const html = `<div class="flex flex-col items-start w-full max-w-prose"><div class="flex items-center gap-2 mb-2 text-black"><i data-lucide="sparkles" class="w-4 h-4"></i><span class="text-xs font-bold uppercase tracking-widest">Beast</span></div><div class="border ${boxClass} p-6 sm:p-8 shadow-sm w-full rounded-2xl rounded-tl-sm text-[15px] font-medium leading-relaxed prose prose-sm break-words overflow-x-hidden">${contentHtml}</div></div>`;
