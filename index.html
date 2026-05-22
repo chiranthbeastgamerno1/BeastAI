@@ -34,7 +34,7 @@
             <i data-lucide="plus-circle" class="w-5 h-5"></i> New Session
         </button>
         <nav id="history-list" class="flex-1 space-y-2 overflow-y-auto custom-scrollbar"></nav>
-        <div class="border-t pt-4 text-[10px] text-zinc-400 font-bold tracking-widest text-center uppercase">Beast Core v8.0</div>
+        <div class="border-t pt-4 text-[10px] text-zinc-400 font-bold tracking-widest text-center uppercase">Beast Core v8.5</div>
     </aside>
 
     <div class="flex-1 flex flex-col min-w-0 bg-zinc-50">
@@ -114,8 +114,8 @@
 
         function startNewChat() { currentSessionId = null; document.getElementById('chat-box').innerHTML = ''; document.getElementById('chat-box').classList.replace('flex', 'hidden'); document.getElementById('welcome-box').style.display = 'block'; }
 
-        // 🚀 COMPRESSION SYSTEM: Shrinks large images before sending to Vercel!
-        async function compressImage(file, maxWidth = 1000) {
+        // 🚀 SUPER COMPRESSION SYSTEM: Crushes images to bypass Vercel limits!
+        async function compressImage(file, maxWidth = 800) {
             if (file.type === 'application/pdf' || !file.type.startsWith('image/')) return file;
             return new Promise((resolve) => {
                 const img = new Image();
@@ -126,9 +126,10 @@
                     canvas.height = img.height * scale;
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    // Crushed to 50% quality to ensure Vercel accepts multiple images
                     canvas.toBlob((blob) => {
                         resolve(new File([blob], file.name, { type: 'image/jpeg' }));
-                    }, 'image/jpeg', 0.7); // 70% quality keeps it lightweight
+                    }, 'image/jpeg', 0.5); 
                 };
                 img.src = URL.createObjectURL(file);
             });
@@ -180,12 +181,10 @@
             formData.append('message', msg);
             formData.append('mode', currentMode);
 
-            // 🧠 MEMORY SYSTEM: Send the last 10 text messages so it remembers!
             let session = JSON.parse(localStorage.getItem(currentSessionId)) || { pinned: false, messages: [] };
             let chatHistory = session.messages.slice(-10).map(m => ({ type: m.type, message: m.message || "" }));
             formData.append('history', JSON.stringify(chatHistory));
 
-            // Compress and append files
             for (let i = 0; i < attachedFiles.length; i++) {
                 const compressedFile = await compressImage(attachedFiles[i].file);
                 formData.append('files', compressedFile);
@@ -199,9 +198,9 @@
                 clearInterval(loadingInterval);
                 
                 const targetBox = document.getElementById(`beast-box-${msgId}`);
-                let replyText = data.reply || "Connection severed.";
+                let replyText = data.reply || "Connection severed. Vercel timeout exceeded! ⏱️😵";
                 
-                if (replyText.includes("resting") || replyText.includes("offline")) {
+                if (replyText.includes("resting") || replyText.includes("offline") || replyText.includes("severed")) {
                     targetBox.classList.replace('bg-white', 'bg-red-50'); targetBox.classList.replace('border-zinc-200', 'border-red-900'); targetBox.classList.add('text-red-900');
                 }
 
@@ -217,7 +216,9 @@
                 
             } catch(e) { 
                 clearInterval(loadingInterval);
-                document.getElementById(`beast-box-${msgId}`).innerHTML = marked.parse("The connection was severed! ⚡😵"); 
+                document.getElementById(`beast-box-${msgId}`).innerHTML = marked.parse("The connection was severed! Too many large files caused a Vercel timeout! ⚡😵"); 
+                document.getElementById(`beast-box-${msgId}`).classList.replace('bg-white', 'bg-red-50');
+                document.getElementById(`beast-box-${msgId}`).classList.add('text-red-900');
             }
             
             lucide.createIcons(); document.getElementById('send-btn').disabled = false;
@@ -240,7 +241,7 @@
                 chatBox.insertAdjacentHTML('beforeend', inner + `</div></div>`);
             } else {
                 let boxClass = "bg-white border-zinc-200 text-zinc-900";
-                if (m.message.includes("resting") || m.message.includes("offline")) boxClass = "bg-red-50 border-red-900 text-red-900";
+                if (m.message.includes("resting") || m.message.includes("offline") || m.message.includes("severed")) boxClass = "bg-red-50 border-red-900 text-red-900";
                 let contentHtml = "";
                 if (m.mode === 'image' && (m.message.startsWith('http') || m.message.startsWith('data:'))) {
                     contentHtml = `<div class="flex flex-col items-center gap-3"><img src="${m.message}" class="w-full border-4 border-black rounded shadow-lg"><a href="${m.message}" download="manifestation.jpg" class="px-4 py-2 bg-black text-white text-xs font-bold uppercase tracking-widest rounded flex items-center gap-2"><i data-lucide="download" class="w-4 h-4"></i> Save</a></div>`;
