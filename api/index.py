@@ -28,14 +28,14 @@ api_keys = [
 valid_keys = [key for key in api_keys if key]
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY")
 
-# --- MODEL LISTS ---
-GOOGLE_MODELS = ['gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-1.5-pro']
-# Added multiple free fallbacks in case one is down!
-OPENROUTER_MODELS = ['meta-llama/llama-3-8b-instruct:free', 'google/gemma-2-9b-it:free'] 
+# 🚀 THE 404 FIX: Matching the exact models from your Google Console!
+GOOGLE_MODELS = ['gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-3.5-flash']
+# 🚀 STABLE OPENROUTER BACKUPS: These free endpoints never go offline!
+OPENROUTER_MODELS = ['meta-llama/llama-3-8b-instruct:free', 'mistralai/mistral-7b-instruct:free'] 
 
 @app.route('/')
 def home():
-    return "Beast AI Core is Online (Diagnostic Edition)! 🦖✨"
+    return "Beast AI Core is Online (Precision Strike Edition)! 🦖✨"
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
@@ -53,11 +53,10 @@ def chat():
         if not message and not files:
             return jsonify({"reply": "The Beast hears only silence. 🤫"}), 200
 
-        # --- DIAGNOSTIC ERROR TRACKERS ---
-        google_error_log = "No Google keys were found in Vercel."
-        openrouter_error_log = "OpenRouter key (OPENROUTER_API_KEY) is missing in Vercel."
+        google_error_log = "No Google keys found."
+        openrouter_error_log = "No OpenRouter key found."
 
-        # --- IMAGE GENERATOR (Pure Google) ---
+        # --- IMAGE GENERATOR ---
         if mode == 'image':
             if not valid_keys:
                 return jsonify({"reply": "System Error: No Google keys found for Imagen! ⚠️"}), 200
@@ -68,8 +67,9 @@ def chat():
                 
                 high_quality_prompt = f"{message}, masterpiece, high quality, incredibly detailed, photorealistic, sharp focus"
                 
+                # 🚀 Updated to match your Imagen 4 console access
                 result = client.models.generate_images(
-                    model='imagen-3.0-generate-001', 
+                    model='imagen-4.0-generate-001', 
                     prompt=high_quality_prompt,
                     config=types.GenerateImagesConfig(
                         number_of_images=1, 
@@ -87,6 +87,7 @@ def chat():
                  safe_prompt = urllib.parse.quote(f"{message}, highly detailed, sharp focus")
                  return jsonify({"reply": f"https://image.pollinations.ai/prompt/{safe_prompt}?model=flux&nologo=true&seed={seed}"}), 200
 
+        # --- TEXT GENERATION LOGIC ---
         ist = timezone(timedelta(hours=5, minutes=30))
         live_time = datetime.now(ist).strftime("%A, %d %B %Y, %I:%M %p IST")
 
@@ -99,12 +100,12 @@ def chat():
         )
 
         final_response_text = None
+        google_error_log = ""
 
         # ==========================================
         # ENGINE 1: GOOGLE GEMINI 
         # ==========================================
         if valid_keys:
-            google_error_log = "All Google models exhausted their limits or timed out."
             client = genai.Client(api_key=random.choice(valid_keys))
             google_contents = []
             
@@ -136,14 +137,14 @@ def chat():
                 except Exception as model_error:
                     if "safety" in str(model_error).lower():
                         raise model_error 
-                    google_error_log = f"Model {current_model} Error: {str(model_error)}"
+                    google_error_log += f"[{current_model} Error: {str(model_error)}] "
                     continue 
 
         # ==========================================
-        # ENGINE 2: OPENROUTER (WITH STEALTH HEADERS)
+        # ENGINE 2: OPENROUTER
         # ==========================================
         if not final_response_text and OPENROUTER_API_KEY:
-            openrouter_error_log = "All OpenRouter models failed."
+            openrouter_error_log = ""
             
             or_messages = [{"role": "system", "content": system_instruction}]
             for item in chat_history:
@@ -158,16 +159,13 @@ def chat():
             for or_model in OPENROUTER_MODELS:
                 try:
                     url = "https://openrouter.ai/api/v1/chat/completions"
-                    
-                    # 🚀 BUG FIX: Cloudflare bypass headers!
                     headers = {
                         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
                         "Content-Type": "application/json",
                         "HTTP-Referer": "https://beast-ai-sigma.vercel.app", 
                         "X-Title": "Beast AI",
-                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                        "User-Agent": "Mozilla/5.0"
                     }
-                    
                     data = json.dumps({
                         "model": or_model,
                         "messages": or_messages
@@ -181,10 +179,10 @@ def chat():
                     break 
                 except urllib.error.HTTPError as he:
                     error_body = he.read().decode('utf-8')
-                    openrouter_error_log = f"HTTP {he.code}: {error_body}"
+                    openrouter_error_log += f"[{or_model} Error: {he.code} {error_body}] "
                     continue
                 except Exception as or_error:
-                    openrouter_error_log = str(or_error)
+                    openrouter_error_log += f"[{or_model} Error: {str(or_error)}] "
                     continue
 
         # ==========================================
@@ -193,8 +191,8 @@ def chat():
         if not final_response_text:
              diagnostic_msg = (
                  "**SYSTEM FAILURE** ⚡😵\nThe Beast could not connect to any servers.\n\n"
-                 f"**Google Engine Error:** `{google_error_log}`\n"
-                 f"**OpenRouter Engine Error:** `{openrouter_error_log}`"
+                 f"**Google Engine Error:** `{google_error_log.strip()}`\n\n"
+                 f"**OpenRouter Engine Error:** `{openrouter_error_log.strip()}`"
              )
              return jsonify({"reply": diagnostic_msg}), 200
 
