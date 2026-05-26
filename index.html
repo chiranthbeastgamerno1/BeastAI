@@ -34,7 +34,7 @@
             <i data-lucide="plus-circle" class="w-5 h-5"></i> New Session
         </button>
         <nav id="history-list" class="flex-1 space-y-2 overflow-y-auto custom-scrollbar"></nav>
-        <div class="border-t pt-4 text-[10px] text-zinc-400 font-bold tracking-widest text-center uppercase">Beast Core v10.0</div>
+        <div class="border-t pt-4 text-[10px] text-zinc-400 font-bold tracking-widest text-center uppercase">Beast Core v10.1</div>
     </aside>
 
     <div class="flex-1 flex flex-col min-w-0 bg-zinc-50">
@@ -61,11 +61,17 @@
                 
                 <div id="attachment-preview" class="hidden relative self-start ml-2 mb-2 flex gap-2 overflow-x-auto custom-scrollbar pb-2 max-w-full"></div>
                 
-                <div class="relative flex items-end">
-                    <button onclick="document.getElementById('file-input').click()" class="absolute left-2 bottom-2 p-3 text-zinc-500 hover:text-black"><i data-lucide="paperclip" class="w-5 h-5"></i></button>
+                <div class="relative flex items-end w-full">
+                    <button onclick="document.getElementById('file-input').click()" class="absolute left-1 sm:left-2 bottom-1.5 sm:bottom-2 p-2 sm:p-3 text-zinc-500 hover:text-black z-10">
+                        <i data-lucide="paperclip" class="w-5 h-5"></i>
+                    </button>
                     <input type="file" id="file-input" class="hidden" accept="image/*,application/pdf" multiple onchange="handleFile(this)">
-                    <textarea id="user-input" rows="1" class="w-full bg-zinc-50 border-2 border-zinc-200 focus:border-black p-4 pl-14 pr-16 resize-none outline-none font-semibold text-[15px] rounded-lg" placeholder="Speak to the Beast..." onkeydown="handleEnter(event)"></textarea>
-                    <button id="send-btn" onclick="sendMessage()" class="absolute right-2 bottom-2 p-3 bg-black text-white rounded-md hover:bg-zinc-800 transition"><i data-lucide="send" class="w-5 h-5"></i></button>
+                    
+                    <textarea id="user-input" rows="1" class="w-full bg-zinc-50 border-2 border-zinc-200 focus:border-black p-3 sm:p-4 pl-10 sm:pl-14 pr-12 sm:pr-16 resize-none outline-none font-semibold text-[15px] rounded-lg" placeholder="Speak to the Beast..." onkeydown="handleEnter(event)"></textarea>
+                    
+                    <button id="send-btn" onclick="sendMessage()" class="absolute right-1 sm:right-2 bottom-1.5 sm:bottom-2 p-2 sm:p-3 bg-black text-white rounded-md hover:bg-zinc-800 transition z-10">
+                        <i data-lucide="send" class="w-5 h-5"></i>
+                    </button>
                 </div>
             </div>
         </footer>
@@ -214,7 +220,6 @@
             
             let session = JSON.parse(localStorage.getItem(currentSessionId)) || { pinned: false, messages: [] };
             
-            // 🧠 LONG-TERM MEMORY FIX: Slice extended to 100 turns, only mapping TEXT.
             let chatHistory = session.messages.slice(-100).map(m => ({ type: m.type, message: m.message || "" }));
             formData.append('history', JSON.stringify(chatHistory));
 
@@ -228,7 +233,7 @@
                 const targetBox = document.getElementById(`beast-box-${msgId}`);
                 let replyText = data.reply || "Connection severed. Vercel timeout exceeded! ⏱️😵";
                 
-                if (replyText.includes("resting") || replyText.includes("offline") || replyText.includes("severed")) {
+                if (replyText.includes("resting") || replyText.includes("offline") || replyText.includes("severed") || replyText.includes("SYSTEM FAILURE")) {
                     clearInterval(loadingInterval);
                     targetBox.classList.replace('bg-white', 'bg-red-50'); targetBox.classList.replace('border-zinc-200', 'border-red-900'); targetBox.classList.add('text-red-900');
                     targetBox.innerHTML = marked.parse(replyText);
@@ -285,7 +290,7 @@
                 chatBox.insertAdjacentHTML('beforeend', inner + `</div></div>`);
             } else {
                 let boxClass = "bg-white border-zinc-200 text-zinc-900";
-                if (m.message.includes("resting") || m.message.includes("offline") || m.message.includes("severed")) boxClass = "bg-red-50 border-red-900 text-red-900";
+                if (m.message.includes("resting") || m.message.includes("offline") || m.message.includes("severed") || m.message.includes("SYSTEM FAILURE")) boxClass = "bg-red-50 border-red-900 text-red-900";
                 let contentHtml = "";
                 if (m.mode === 'image' && (m.message.startsWith('http') || m.message.startsWith('data:'))) {
                     contentHtml = `
