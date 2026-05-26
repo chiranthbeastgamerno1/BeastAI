@@ -22,47 +22,33 @@
         .dot:nth-child(2) { animation-delay: -0.16s; }
         @keyframes bounce { 0%, 80%, 100% { transform: translateY(0); } 40% { transform: translateY(-8px); } }
 
-        /* 🚀 THE MAGICAL GEMINI AURA CSS */
+        /* Magical Gemini Aura CSS */
         @keyframes gemini-aura {
             0% { background-position: 0% 50%; }
             50% { background-position: 100% 50%; }
             100% { background-position: 0% 50%; }
         }
         
-        /* The glowing border effect for the input box */
-        .gemini-glow {
-            position: relative;
-            z-index: 1;
-        }
+        .gemini-glow { position: relative; z-index: 1; }
         .gemini-glow::before {
-            content: '';
-            position: absolute;
-            inset: -3px; /* How far the glow spreads outside the box */
+            content: ''; position: absolute; inset: -3px; 
             background: linear-gradient(90deg, #4285f4, #9b72cb, #d96570, #fbbc05, #4285f4);
-            background-size: 200% 200%;
-            animation: gemini-aura 3s linear infinite;
-            border-radius: 0.6rem; /* Matches the rounded-lg of the textarea */
-            z-index: -1;
-            filter: blur(8px);
-            opacity: 0;
-            transition: opacity 0.3s ease;
+            background-size: 200% 200%; animation: gemini-aura 3s linear infinite;
+            border-radius: 0.6rem; z-index: -1; filter: blur(8px); opacity: 0; transition: opacity 0.3s ease;
         }
-        /* Ignites the aura only when you click inside the text box! */
-        .gemini-glow:focus-within::before {
-            opacity: 0.85;
-        }
+        .gemini-glow:focus-within::before { opacity: 0.85; }
 
-        /* The shimmering rainbow text effect */
         .gemini-text {
             background: linear-gradient(90deg, #4285f4, #9b72cb, #d96570, #fbbc05, #4285f4);
-            background-size: 200% 200%;
-            animation: gemini-aura 3s linear infinite;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            display: inline-block;
+            background-size: 200% 200%; animation: gemini-aura 3s linear infinite;
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: inline-block;
         }
-        .gemini-icon {
-            stroke: url(#gemini-gradient);
+
+        /* 🚀 THE DESKTOP SLIDE ANIMATION: Hides the 72-width (18rem) sidebar smoothly! */
+        @media (min-width: 1024px) {
+            .desktop-collapsed {
+                margin-left: -18rem; 
+            }
         }
     </style>
 </head>
@@ -77,7 +63,7 @@
       </linearGradient>
     </svg>
 
-    <aside id="sidebar" class="fixed lg:relative top-0 left-0 h-full w-72 bg-white border-r border-zinc-200 p-6 flex flex-col z-30 transition-transform -translate-x-full lg:translate-x-0">
+    <aside id="sidebar" class="fixed lg:relative top-0 left-0 h-full w-72 bg-white border-r border-zinc-200 p-6 flex flex-col z-40 transition-all duration-300 ease-in-out -translate-x-full lg:translate-x-0">
         <div class="flex items-center justify-between mb-8">
             <span class="font-beast-logo text-xl font-bold uppercase tracking-widest text-black">HISTORY</span>
             <button onclick="clearUnpinned()" class="text-[10px] font-black text-zinc-400 hover:text-red-600 transition uppercase tracking-tighter">Clear All</button>
@@ -86,12 +72,15 @@
             <i data-lucide="plus-circle" class="w-5 h-5"></i> New Session
         </button>
         <nav id="history-list" class="flex-1 space-y-2 overflow-y-auto custom-scrollbar"></nav>
-        <div class="border-t pt-4 text-[10px] text-zinc-400 font-bold tracking-widest text-center uppercase">Beast Core v10.3</div>
+        <div class="border-t pt-4 text-[10px] text-zinc-400 font-bold tracking-widest text-center uppercase">Beast Core v10.4</div>
     </aside>
 
-    <div class="flex-1 flex flex-col min-w-0 bg-zinc-50">
+    <div class="flex-1 flex flex-col min-w-0 bg-zinc-50 relative">
         <header class="flex items-center justify-center px-6 py-5 bg-white border-b-2 border-black shadow-sm z-10 relative">
-            <button onclick="toggleSidebar()" class="absolute left-4 lg:hidden"><i data-lucide="menu" class="w-6 h-6"></i></button>
+            <button onclick="toggleSidebar()" class="absolute left-4 sm:left-6 text-zinc-500 hover:text-black transition-colors z-20">
+                <i data-lucide="menu" class="w-6 h-6"></i>
+            </button>
+            
             <h1 class="text-3xl font-black uppercase tracking-[0.25em] text-black font-beast-logo">Beast Ai</h1>
         </header>
 
@@ -135,7 +124,18 @@
         let attachedFiles = [];
         let currentSessionId = null, loadingInterval = null;
 
-        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
+        // 🚀 UPDATED TOGGLE LOGIC: Controls both Mobile overlap and Desktop sliding!
+        function toggleSidebar() { 
+            const sb = document.getElementById('sidebar');
+            if (window.innerWidth >= 1024) {
+                // On Desktop: Push it left smoothly
+                sb.classList.toggle('desktop-collapsed');
+            } else {
+                // On Mobile: Slide it over the screen
+                sb.classList.toggle('-translate-x-full');
+            }
+        }
+        
         function handleEnter(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }
         function setMode(m) { 
             currentMode = m;
@@ -209,7 +209,7 @@
             document.getElementById('welcome-box').style.display = 'none';
             const chatBox = document.getElementById('chat-box'); chatBox.innerHTML = ''; chatBox.classList.replace('hidden', 'flex');
             session.messages.forEach(m => appendHistoryMessage(m));
-            if(window.innerWidth < 1024) toggleSidebar();
+            if(window.innerWidth < 1024) document.getElementById('sidebar').classList.add('-translate-x-full'); // Auto-close on mobile when loading chat
             loadHistory();
         }
 
@@ -261,8 +261,6 @@
             chatBox.insertAdjacentHTML('beforeend', userHtml);
 
             const msgId = Date.now();
-            
-            // 🚀 APPLIED SHIMMER EFFECT TO THE THINKING TEXT AND ICON
             const beastHtml = `
                 <div class="flex flex-col items-start w-full max-w-prose">
                     <div class="flex items-center gap-2 mb-2">
@@ -324,7 +322,6 @@
                     targetBox.querySelectorAll('pre').forEach(pre => pre.classList.add('bg-zinc-900', 'text-zinc-100', 'p-4', 'rounded-lg', 'overflow-x-auto', 'my-4'));
                 }
                 
-                // Switch the shimmering text back to normal black text once the response arrives!
                 const headerElement = targetBox.previousElementSibling;
                 headerElement.innerHTML = `<i data-lucide="sparkles" class="w-4 h-4"></i><span class="text-xs font-bold uppercase tracking-widest">Beast</span>`;
                 lucide.createIcons();
