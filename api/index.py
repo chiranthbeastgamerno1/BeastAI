@@ -4,6 +4,7 @@ from google import genai
 from google.genai import types
 import os
 import urllib.parse
+import urllib.request
 import random
 import json
 from datetime import datetime, timedelta, timezone
@@ -11,6 +12,7 @@ from datetime import datetime, timedelta, timezone
 app = Flask(__name__)
 CORS(app) 
 
+# --- GOOGLE KEYS ---
 api_keys = [
     os.environ.get("GEMINI_API_KEY_1"),
     os.environ.get("GEMINI_API_KEY_2"),
@@ -23,11 +25,18 @@ api_keys = [
     os.environ.get("GEMINI_API_KEY_9")
 ]
 valid_keys = [key for key in api_keys if key]
-TEXT_MODELS = ['gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-1.5-pro']
+
+# --- OPENROUTER KEY ---
+OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY")
+
+# --- MODEL LISTS ---
+GOOGLE_MODELS = ['gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-1.5-pro']
+# Using Meta's Llama 3 (Free) as the ultimate indestructible backup on OpenRouter
+OPENROUTER_MODELS = ['meta-llama/llama-3-8b-instruct:free'] 
 
 @app.route('/')
 def home():
-    return "Beast AI Core is Online (Memory + HD Edition)! 🦖✨"
+    return "Beast AI Core is Online (Hybrid Dual-Engine Edition)! 🦖✨"
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
@@ -35,7 +44,6 @@ def chat():
         message = request.form.get("message", "")
         mode = request.form.get("mode", "chat")
         
-        # 🧠 THE MEMORY FIX: We are grabbing the history and files again!
         files = request.files.getlist("files")
         history_json = request.form.get("history", "[]")
         
@@ -47,14 +55,13 @@ def chat():
         if not message and not files:
             return jsonify({"reply": "The Beast hears only silence. 🤫"}), 200
 
-        if not valid_keys:
-            return jsonify({"reply": "System Error: No keys found in Vercel! ⚠️"}), 200
-
-        client = genai.Client(api_key=random.choice(valid_keys))
-
-        # --- THE HIGH-RESOLUTION IMAGE GENERATOR ---
+        # --- THE HIGH-RESOLUTION IMAGE GENERATOR (Remains purely Google/Pollinations) ---
         if mode == 'image':
+            if not valid_keys:
+                return jsonify({"reply": "System Error: No Google keys found for Imagen! ⚠️"}), 200
+                
             try:
+                client = genai.Client(api_key=random.choice(valid_keys))
                 is_landscape = "landscape" in message.lower() or "widescreen" in message.lower()
                 aspect = "16:9" if is_landscape else "9:16"
                 
@@ -79,6 +86,7 @@ def chat():
                  safe_prompt = urllib.parse.quote(f"{message}, highly detailed, sharp focus")
                  return jsonify({"reply": f"https://image.pollinations.ai/prompt/{safe_prompt}?model=flux&nologo=true&seed={seed}"}), 200
 
+        # --- TEXT GENERATION LOGIC ---
         ist = timezone(timedelta(hours=5, minutes=30))
         live_time = datetime.now(ist).strftime("%A, %d %B %Y, %I:%M %p IST")
 
@@ -94,46 +102,94 @@ def chat():
             "4. Always use emojis! 🚀🔥"
         )
 
-        # 🧠 LOAD HISTORY INTO THE AI'S BRAIN
-        api_contents = []
-        
-        for item in chat_history:
-            role = "user" if item.get("type") == "user" else "model"
-            text = item.get("message", "")
-            if text:
-                api_contents.append(types.Content(role=role, parts=[types.Part.from_text(text=text)]))
-        
-        # Add Current Message and Files
-        current_parts = []
-        if message:
-            current_parts.append(types.Part.from_text(text=message))
-        if files:
-            for file in files:
-                current_parts.append(types.Part.from_bytes(data=file.read(), mime_type=file.content_type))
-                
-        if current_parts:
-            api_contents.append(types.Content(role="user", parts=current_parts))
-
-        # --- INDESTRUCTIBLE TEXT GENERATOR ---
         final_response_text = None
-        for current_model in TEXT_MODELS:
-            try:
-                response = client.models.generate_content(
-                    model=current_model, 
-                    contents=api_contents,
-                    config=types.GenerateContentConfig(system_instruction=system_instruction)
-                )
-                final_response_text = response.text
-                break
-            except Exception as model_error:
-                error_str = str(model_error).lower()
-                if "safety" in error_str:
-                    raise model_error 
-                print(f"Model {current_model} failed: {str(model_error)}")
-                continue 
 
+        # ==========================================
+        # ENGINE 1: GOOGLE GEMINI (PRIMARY)
+        # ==========================================
+        if valid_keys:
+            client = genai.Client(api_key=random.choice(valid_keys))
+            google_contents = []
+            
+            for item in chat_history:
+                role = "user" if item.get("type") == "user" else "model"
+                text = item.get("message", "")
+                if text:
+                    google_contents.append(types.Content(role=role, parts=[types.Part.from_text(text=text)]))
+            
+            current_parts = []
+            if message:
+                current_parts.append(types.Part.from_text(text=message))
+            if files:
+                for file in files:
+                    current_parts.append(types.Part.from_bytes(data=file.read(), mime_type=file.content_type))
+                    
+            if current_parts:
+                google_contents.append(types.Content(role="user", parts=current_parts))
+
+            for current_model in GOOGLE_MODELS:
+                try:
+                    response = client.models.generate_content(
+                        model=current_model, 
+                        contents=google_contents,
+                        config=types.GenerateContentConfig(system_instruction=system_instruction)
+                    )
+                    final_response_text = response.text
+                    break # Success! Break out of Google loop.
+                except Exception as model_error:
+                    error_str = str(model_error).lower()
+                    if "safety" in error_str:
+                        raise model_error 
+                    print(f"Google Model {current_model} failed: {str(model_error)}")
+                    continue 
+
+        # ==========================================
+        # ENGINE 2: OPENROUTER (TWIN-TURBO BACKUP)
+        # ==========================================
+        if not final_response_text and OPENROUTER_API_KEY:
+            print("Google engines exhausted. Engaging OpenRouter fallback...")
+            
+            # Translate history into OpenRouter (OpenAI) format
+            or_messages = [{"role": "system", "content": system_instruction}]
+            for item in chat_history:
+                role = "user" if item.get("type") == "user" else "assistant"
+                text = item.get("message", "")
+                if text:
+                    or_messages.append({"role": role, "content": text})
+            
+            if message:
+                or_messages.append({"role": "user", "content": message})
+            # Note: The free Llama models on OpenRouter don't easily process vision/files, 
+            # so we only send the text for the fallback to ensure it doesn't crash.
+
+            for or_model in OPENROUTER_MODELS:
+                try:
+                    url = "https://openrouter.ai/api/v1/chat/completions"
+                    headers = {
+                        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+                        "Content-Type": "application/json"
+                    }
+                    data = json.dumps({
+                        "model": or_model,
+                        "messages": or_messages
+                    }).encode('utf-8')
+                    
+                    req = urllib.request.Request(url, data=data, headers=headers)
+                    # 15-second timeout to respect Vercel limits
+                    response = urllib.request.urlopen(req, timeout=15) 
+                    response_data = json.loads(response.read().decode('utf-8'))
+                    
+                    final_response_text = response_data['choices'][0]['message']['content']
+                    break # Success! Break out of OpenRouter loop.
+                except Exception as or_error:
+                    print(f"OpenRouter Model {or_model} failed: {str(or_error)}")
+                    continue
+
+        # ==========================================
+        # FINAL CHECK
+        # ==========================================
         if not final_response_text:
-             return jsonify({"reply": "The Beast is resting! 💤 Daily limit reached. Come back tomorrow! 🦖✨"}), 200
+             return jsonify({"reply": "The Beast is resting! 💤 Both Google AND OpenRouter servers timed out. Please try again! 🦖✨"}), 200
 
         return jsonify({"reply": final_response_text}), 200
 
