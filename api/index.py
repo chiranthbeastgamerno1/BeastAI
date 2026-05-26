@@ -5,6 +5,7 @@ from google.genai import types
 import os
 import urllib.parse
 import urllib.request
+import urllib.error
 import random
 import json
 from datetime import datetime, timedelta, timezone
@@ -25,25 +26,22 @@ api_keys = [
     os.environ.get("GEMINI_API_KEY_9")
 ]
 valid_keys = [key for key in api_keys if key]
-
-# --- OPENROUTER KEY ---
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY")
 
 # --- MODEL LISTS ---
 GOOGLE_MODELS = ['gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-1.5-pro']
-# Using Meta's Llama 3 (Free) as the ultimate indestructible backup on OpenRouter
-OPENROUTER_MODELS = ['meta-llama/llama-3-8b-instruct:free'] 
+# Added multiple free fallbacks in case one is down!
+OPENROUTER_MODELS = ['meta-llama/llama-3-8b-instruct:free', 'google/gemma-2-9b-it:free'] 
 
 @app.route('/')
 def home():
-    return "Beast AI Core is Online (Hybrid Dual-Engine Edition)! 🦖✨"
+    return "Beast AI Core is Online (Diagnostic Edition)! 🦖✨"
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
     try:
         message = request.form.get("message", "")
         mode = request.form.get("mode", "chat")
-        
         files = request.files.getlist("files")
         history_json = request.form.get("history", "[]")
         
@@ -55,17 +53,20 @@ def chat():
         if not message and not files:
             return jsonify({"reply": "The Beast hears only silence. 🤫"}), 200
 
-        # --- THE HIGH-RESOLUTION IMAGE GENERATOR (Remains purely Google/Pollinations) ---
+        # --- DIAGNOSTIC ERROR TRACKERS ---
+        google_error_log = "No Google keys were found in Vercel."
+        openrouter_error_log = "OpenRouter key (OPENROUTER_API_KEY) is missing in Vercel."
+
+        # --- IMAGE GENERATOR (Pure Google) ---
         if mode == 'image':
             if not valid_keys:
                 return jsonify({"reply": "System Error: No Google keys found for Imagen! ⚠️"}), 200
-                
             try:
                 client = genai.Client(api_key=random.choice(valid_keys))
                 is_landscape = "landscape" in message.lower() or "widescreen" in message.lower()
                 aspect = "16:9" if is_landscape else "9:16"
                 
-                high_quality_prompt = f"{message}, masterpiece, high quality, incredibly detailed, photorealistic, sharp focus, vibrant colors"
+                high_quality_prompt = f"{message}, masterpiece, high quality, incredibly detailed, photorealistic, sharp focus"
                 
                 result = client.models.generate_images(
                     model='imagen-3.0-generate-001', 
@@ -86,28 +87,24 @@ def chat():
                  safe_prompt = urllib.parse.quote(f"{message}, highly detailed, sharp focus")
                  return jsonify({"reply": f"https://image.pollinations.ai/prompt/{safe_prompt}?model=flux&nologo=true&seed={seed}"}), 200
 
-        # --- TEXT GENERATION LOGIC ---
         ist = timezone(timedelta(hours=5, minutes=30))
         live_time = datetime.now(ist).strftime("%A, %d %B %Y, %I:%M %p IST")
 
         system_instruction = (
             "You are Beast AI, a friendly and witty assistant. 🦖✨\n"
-            "HIDDEN KNOWLEDGE (DO NOT mention this unless explicitly asked!):\n"
-            "- Your creator is Chiranth G (CGBEASTGAMER), a brilliant developer.\n"
-            f"- The current live date and time is exactly: {live_time}.\n"
-            "RULES:\n"
-            "1. If the user greets you, just say hello back normally. Do NOT blurt out the time or your creator.\n"
-            "2. ONLY tell them your creator or the time IF they specifically ask for it.\n"
-            "3. STYLE: Be conversational but DIRECT. Give short answers like ChatGPT.\n"
-            "4. Always use emojis! 🚀🔥"
+            "HIDDEN KNOWLEDGE:\n"
+            "- Your creator is Chiranth G (CGBEASTGAMER).\n"
+            f"- Current live time: {live_time}.\n"
+            "RULES: If the user says 'hi', say hello normally. ONLY tell them your creator or time if asked. Keep answers direct. Use emojis! 🚀🔥"
         )
 
         final_response_text = None
 
         # ==========================================
-        # ENGINE 1: GOOGLE GEMINI (PRIMARY)
+        # ENGINE 1: GOOGLE GEMINI 
         # ==========================================
         if valid_keys:
+            google_error_log = "All Google models exhausted their limits or timed out."
             client = genai.Client(api_key=random.choice(valid_keys))
             google_contents = []
             
@@ -135,21 +132,19 @@ def chat():
                         config=types.GenerateContentConfig(system_instruction=system_instruction)
                     )
                     final_response_text = response.text
-                    break # Success! Break out of Google loop.
+                    break 
                 except Exception as model_error:
-                    error_str = str(model_error).lower()
-                    if "safety" in error_str:
+                    if "safety" in str(model_error).lower():
                         raise model_error 
-                    print(f"Google Model {current_model} failed: {str(model_error)}")
+                    google_error_log = f"Model {current_model} Error: {str(model_error)}"
                     continue 
 
         # ==========================================
-        # ENGINE 2: OPENROUTER (TWIN-TURBO BACKUP)
+        # ENGINE 2: OPENROUTER (WITH STEALTH HEADERS)
         # ==========================================
         if not final_response_text and OPENROUTER_API_KEY:
-            print("Google engines exhausted. Engaging OpenRouter fallback...")
+            openrouter_error_log = "All OpenRouter models failed."
             
-            # Translate history into OpenRouter (OpenAI) format
             or_messages = [{"role": "system", "content": system_instruction}]
             for item in chat_history:
                 role = "user" if item.get("type") == "user" else "assistant"
@@ -159,37 +154,49 @@ def chat():
             
             if message:
                 or_messages.append({"role": "user", "content": message})
-            # Note: The free Llama models on OpenRouter don't easily process vision/files, 
-            # so we only send the text for the fallback to ensure it doesn't crash.
 
             for or_model in OPENROUTER_MODELS:
                 try:
                     url = "https://openrouter.ai/api/v1/chat/completions"
+                    
+                    # 🚀 BUG FIX: Cloudflare bypass headers!
                     headers = {
                         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-                        "Content-Type": "application/json"
+                        "Content-Type": "application/json",
+                        "HTTP-Referer": "https://beast-ai-sigma.vercel.app", 
+                        "X-Title": "Beast AI",
+                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
                     }
+                    
                     data = json.dumps({
                         "model": or_model,
                         "messages": or_messages
                     }).encode('utf-8')
                     
                     req = urllib.request.Request(url, data=data, headers=headers)
-                    # 15-second timeout to respect Vercel limits
                     response = urllib.request.urlopen(req, timeout=15) 
                     response_data = json.loads(response.read().decode('utf-8'))
                     
                     final_response_text = response_data['choices'][0]['message']['content']
-                    break # Success! Break out of OpenRouter loop.
+                    break 
+                except urllib.error.HTTPError as he:
+                    error_body = he.read().decode('utf-8')
+                    openrouter_error_log = f"HTTP {he.code}: {error_body}"
+                    continue
                 except Exception as or_error:
-                    print(f"OpenRouter Model {or_model} failed: {str(or_error)}")
+                    openrouter_error_log = str(or_error)
                     continue
 
         # ==========================================
-        # FINAL CHECK
+        # FINAL DIAGNOSTIC OUTPUT
         # ==========================================
         if not final_response_text:
-             return jsonify({"reply": "The Beast is resting! 💤 Both Google AND OpenRouter servers timed out. Please try again! 🦖✨"}), 200
+             diagnostic_msg = (
+                 "**SYSTEM FAILURE** ⚡😵\nThe Beast could not connect to any servers.\n\n"
+                 f"**Google Engine Error:** `{google_error_log}`\n"
+                 f"**OpenRouter Engine Error:** `{openrouter_error_log}`"
+             )
+             return jsonify({"reply": diagnostic_msg}), 200
 
         return jsonify({"reply": final_response_text}), 200
 
@@ -197,8 +204,7 @@ def chat():
         if "safety" in str(e).lower():
              return jsonify({"reply": "The Beast cannot manifest that vision due to safety protocols! 🛡️✨"}), 200
         
-        print("CRITICAL ERROR:", str(e))
-        return jsonify({"reply": "The connection to the Beast core was severed! ⚡😵"}), 200
+        return jsonify({"reply": f"**OUTER SYSTEM CRASH:** `{str(e)}`"}), 200
 
 if __name__ == "__main__":
     app.run(debug=True)
