@@ -10,16 +10,22 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@900&family=Inter:wght@400;500;600;700;800&display=swap');
         
+        /* Theme Colors */
         :root { --bg: #fafafa; --text: #18181b; --card: #ffffff; --border: #e4e4e7; }
         .dark { --bg: #09090b; --text: #f4f4f5; --card: #18181b; --border: #27272a; }
         
         body { background-color: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; overflow: hidden; transition: background 0.3s, color 0.3s; }
-        .bg-custom { background-color: var(--bg); }
         .bg-card { background-color: var(--card); border: 1px solid var(--border); }
         .font-beast-logo { font-family: 'Playfair Display', serif; }
         
         .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #d4d4d8; border-radius: 4px; }
+        
+        /* Aura */
+        @keyframes gemini-aura { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        .gemini-glow::before { content: ''; position: absolute; inset: -3px; background: linear-gradient(90deg, #4285f4, #9b72cb, #d96570, #fbbc05, #4285f4); background-size: 200% 200%; animation: gemini-aura 3s linear infinite; border-radius: 0.6rem; z-index: -1; filter: blur(8px); opacity: 0; transition: opacity 0.3s ease; }
+        .gemini-glow:focus-within::before { opacity: 0.85; }
+        .gemini-text { background: linear-gradient(90deg, #4285f4, #9b72cb, #d96570, #fbbc05, #4285f4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
     </style>
 </head>
 <body class="flex h-[100dvh] w-full">
@@ -27,48 +33,44 @@
     <aside id="sidebar" class="fixed lg:relative top-0 left-0 h-full w-72 bg-card border-r border-[var(--border)] p-6 flex flex-col z-40 transition-all duration-300 -translate-x-full lg:translate-x-0">
         <div class="flex items-center justify-between mb-8">
             <span class="font-beast-logo text-xl font-bold uppercase tracking-widest">HISTORY</span>
-            <button onclick="clearUnpinned()" class="text-[10px] font-black text-zinc-400 hover:text-red-600 transition uppercase">Clear All</button>
+            <button onclick="clearUnpinned()" class="text-[10px] font-black opacity-50 hover:opacity-100 uppercase">Clear</button>
         </div>
-        <button onclick="startNewChat()" class="flex items-center gap-3 bg-[var(--text)] text-[var(--bg)] p-4 rounded-lg text-sm font-bold transition mb-6 shadow-md">
+        <button onclick="startNewChat()" class="flex items-center gap-3 bg-[var(--text)] text-[var(--bg)] p-4 rounded-lg text-sm font-bold mb-6">
             <i data-lucide="plus-circle" class="w-5 h-5"></i> New Session
         </button>
         <nav id="history-list" class="flex-1 space-y-2 overflow-y-auto custom-scrollbar"></nav>
-        
-        <button onclick="toggleTheme()" class="mt-4 flex items-center gap-3 w-full p-3 bg-[var(--border)] rounded-lg text-xs font-bold uppercase tracking-widest hover:opacity-80 transition">
+        <button onclick="toggleTheme()" class="mt-4 flex items-center gap-3 w-full p-3 bg-[var(--border)] rounded-lg text-xs font-bold uppercase">
             <i data-lucide="moon" id="theme-icon" class="w-4 h-4"></i> <span id="theme-text">Toggle Theme</span>
         </button>
     </aside>
 
-    <div class="flex-1 flex flex-col min-w-0 bg-custom relative">
+    <div class="flex-1 flex flex-col min-w-0 bg-[var(--bg)] relative">
         <header class="flex items-center justify-center px-6 py-5 bg-card border-b border-[var(--border)] z-10 relative">
-            <button onclick="toggleSidebar()" class="absolute left-4 text-[var(--text)] hover:opacity-70 transition-colors z-20">
-                <i data-lucide="menu" class="w-6 h-6"></i>
-            </button>
+            <button onclick="toggleSidebar()" class="absolute left-4 z-20"><i data-lucide="menu" class="w-6 h-6"></i></button>
             <h1 class="text-3xl font-black uppercase tracking-[0.25em] font-beast-logo">Beast Ai</h1>
         </header>
 
         <main id="scroll-container" class="flex-1 overflow-y-auto p-4 sm:p-8 custom-scrollbar">
             <div class="max-w-3xl mx-auto space-y-8 mt-4">
-                <div id="welcome-box" class="w-full max-w-md mx-auto text-center p-8 bg-card shadow-sm rounded-lg border border-[var(--border)]">
-                    <span class="italic text-lg tracking-wide font-medium">Welcome to Beast Ai.<br>Pure, unadulterated intelligence.</span>
+                <div id="welcome-box" class="w-full max-w-md mx-auto text-center p-8 bg-card rounded-lg border border-[var(--border)]">
+                    <span class="italic text-lg tracking-wide">Welcome to Beast Ai.</span>
                 </div>
                 <div id="chat-box" class="w-full space-y-10 hidden flex-col"></div>
             </div>
         </main>
 
         <footer class="bg-card border-t border-[var(--border)] p-4 sm:p-6 z-20">
-            <div class="max-w-3xl mx-auto flex flex-col gap-4">
-                <div class="relative flex items-end w-full">
-                    <textarea id="user-input" rows="1" class="w-full bg-[var(--bg)] border border-[var(--border)] p-4 pr-16 resize-none outline-none font-semibold text-[15px] rounded-lg transition-colors" placeholder="Speak to the Beast..." onkeydown="handleEnter(event)"></textarea>
-                    <button id="send-btn" onclick="sendMessage()" class="absolute right-2 bottom-2 p-3 bg-[var(--text)] text-[var(--bg)] rounded-md transition"><i data-lucide="send" class="w-5 h-5"></i></button>
-                </div>
+            <div class="max-w-3xl mx-auto relative flex items-end w-full gemini-glow">
+                <button onclick="document.getElementById('file-input').click()" class="absolute left-2 bottom-3 p-2 z-10"><i data-lucide="paperclip" class="w-5 h-5"></i></button>
+                <input type="file" id="file-input" class="hidden" multiple onchange="handleFile(this)">
+                <textarea id="user-input" rows="1" class="w-full bg-[var(--bg)] border border-[var(--border)] p-4 pl-12 pr-14 rounded-lg outline-none" placeholder="Speak to the Beast..." onkeydown="handleEnter(event)"></textarea>
+                <button id="send-btn" onclick="sendMessage()" class="absolute right-2 bottom-3 p-2 bg-[var(--text)] text-[var(--bg)] rounded-md"><i data-lucide="send" class="w-5 h-5"></i></button>
             </div>
         </footer>
     </div>
 
     <script>
         lucide.createIcons();
-        
         function toggleTheme() {
             document.body.classList.toggle('dark');
             const isDark = document.body.classList.contains('dark');
@@ -77,28 +79,21 @@
             document.getElementById('theme-text').innerText = isDark ? 'Light Mode' : 'Dark Mode';
             lucide.createIcons();
         }
-
-        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); if (window.innerWidth >= 1024) document.getElementById('sidebar').classList.toggle('desktop-collapsed'); }
         function handleEnter(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }
-        
-        // 🚀 CRITICAL FIX: The function that connects the send button to the text input
         async function sendMessage() {
             const input = document.getElementById('user-input');
             const msg = input.value.trim();
-            if (!msg) return; 
+            if (!msg) return;
             input.value = '';
-            
             document.getElementById('welcome-box').style.display = 'none';
             const chatBox = document.getElementById('chat-box');
             chatBox.classList.replace('hidden', 'flex');
-            
             chatBox.insertAdjacentHTML('beforeend', `<div class="flex flex-col items-end"><div class="bg-black text-white p-4 rounded-lg">${msg}</div></div>`);
             
-            // Re-call your Python backend logic here
-            // (I have omitted the backend fetch logic to keep it simple, but ensure your fetch() call remains here!)
+            // Re-add your fetch logic here
         }
-        
-        window.onload = () => { if(localStorage.getItem('beast-theme') === 'dark') toggleTheme(); lucide.createIcons(); };
+        window.onload = () => { if(localStorage.getItem('beast-theme') === 'dark') toggleTheme(); };
     </script>
 </body>
 </html>
