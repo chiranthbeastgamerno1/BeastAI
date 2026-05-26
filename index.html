@@ -21,9 +21,61 @@
         .dot:nth-child(1) { animation-delay: -0.32s; }
         .dot:nth-child(2) { animation-delay: -0.16s; }
         @keyframes bounce { 0%, 80%, 100% { transform: translateY(0); } 40% { transform: translateY(-8px); } }
+
+        /* 🚀 THE MAGICAL GEMINI AURA CSS */
+        @keyframes gemini-aura {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        /* The glowing border effect for the input box */
+        .gemini-glow {
+            position: relative;
+            z-index: 1;
+        }
+        .gemini-glow::before {
+            content: '';
+            position: absolute;
+            inset: -3px; /* How far the glow spreads outside the box */
+            background: linear-gradient(90deg, #4285f4, #9b72cb, #d96570, #fbbc05, #4285f4);
+            background-size: 200% 200%;
+            animation: gemini-aura 3s linear infinite;
+            border-radius: 0.6rem; /* Matches the rounded-lg of the textarea */
+            z-index: -1;
+            filter: blur(8px);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        /* Ignites the aura only when you click inside the text box! */
+        .gemini-glow:focus-within::before {
+            opacity: 0.85;
+        }
+
+        /* The shimmering rainbow text effect */
+        .gemini-text {
+            background: linear-gradient(90deg, #4285f4, #9b72cb, #d96570, #fbbc05, #4285f4);
+            background-size: 200% 200%;
+            animation: gemini-aura 3s linear infinite;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: inline-block;
+        }
+        .gemini-icon {
+            stroke: url(#gemini-gradient);
+        }
     </style>
 </head>
 <body class="flex h-[100dvh] w-full">
+
+    <svg style="width:0;height:0;position:absolute;" aria-hidden="true" focusable="false">
+      <linearGradient id="gemini-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" stop-color="#4285f4" />
+        <stop offset="33%" stop-color="#9b72cb" />
+        <stop offset="66%" stop-color="#d96570" />
+        <stop offset="100%" stop-color="#fbbc05" />
+      </linearGradient>
+    </svg>
 
     <aside id="sidebar" class="fixed lg:relative top-0 left-0 h-full w-72 bg-white border-r border-zinc-200 p-6 flex flex-col z-30 transition-transform -translate-x-full lg:translate-x-0">
         <div class="flex items-center justify-between mb-8">
@@ -34,7 +86,7 @@
             <i data-lucide="plus-circle" class="w-5 h-5"></i> New Session
         </button>
         <nav id="history-list" class="flex-1 space-y-2 overflow-y-auto custom-scrollbar"></nav>
-        <div class="border-t pt-4 text-[10px] text-zinc-400 font-bold tracking-widest text-center uppercase">Beast Core v10.2</div>
+        <div class="border-t pt-4 text-[10px] text-zinc-400 font-bold tracking-widest text-center uppercase">Beast Core v10.3</div>
     </aside>
 
     <div class="flex-1 flex flex-col min-w-0 bg-zinc-50">
@@ -61,13 +113,13 @@
                 
                 <div id="attachment-preview" class="hidden relative self-start ml-2 mb-2 flex gap-2 overflow-x-auto custom-scrollbar pb-2 max-w-full"></div>
                 
-                <div class="relative flex items-end w-full">
+                <div class="relative flex items-end w-full gemini-glow">
                     <button onclick="document.getElementById('file-input').click()" class="absolute left-1 sm:left-2 bottom-1.5 sm:bottom-2 p-2 sm:p-3 text-zinc-500 hover:text-black z-10">
                         <i data-lucide="paperclip" class="w-5 h-5"></i>
                     </button>
                     <input type="file" id="file-input" class="hidden" accept="image/*,application/pdf" multiple onchange="handleFile(this)">
                     
-                    <textarea id="user-input" rows="1" class="w-full bg-zinc-50 border-2 border-zinc-200 focus:border-black p-3 sm:p-4 pl-10 sm:pl-14 pr-12 sm:pr-16 resize-none outline-none font-semibold text-[15px] rounded-lg" placeholder="Speak to the Beast..." onkeydown="handleEnter(event)"></textarea>
+                    <textarea id="user-input" rows="1" class="w-full bg-white border-2 border-zinc-200 focus:border-zinc-300 p-3 sm:p-4 pl-10 sm:pl-14 pr-12 sm:pr-16 resize-none outline-none font-semibold text-[15px] rounded-lg relative z-0 transition-colors" placeholder="Speak to the Beast..." onkeydown="handleEnter(event)"></textarea>
                     
                     <button id="send-btn" onclick="sendMessage()" class="absolute right-1 sm:right-2 bottom-1.5 sm:bottom-2 p-2 sm:p-3 bg-black text-white rounded-md hover:bg-zinc-800 transition z-10">
                         <i data-lucide="send" class="w-5 h-5"></i>
@@ -188,8 +240,6 @@
             document.getElementById('send-btn').disabled = true;
 
             const currentFilesSnapshot = attachedFiles.map(f => ({ name: f.name, isPdf: f.isPdf, preview: f.preview }));
-            
-            // 🚀 THE UI UPGRADE: Added the "YOU" label above the user bubble!
             let userHtml = `
             <div class="flex flex-col items-end ml-auto max-w-[85%]">
                 <div class="flex items-center gap-2 mb-2 text-zinc-500">
@@ -211,9 +261,14 @@
             chatBox.insertAdjacentHTML('beforeend', userHtml);
 
             const msgId = Date.now();
+            
+            // 🚀 APPLIED SHIMMER EFFECT TO THE THINKING TEXT AND ICON
             const beastHtml = `
                 <div class="flex flex-col items-start w-full max-w-prose">
-                    <div class="flex items-center gap-2 mb-2 text-black"><i data-lucide="sparkles" class="w-4 h-4 ${currentMode === 'image' ? 'animate-pulse' : ''}"></i><span class="text-xs font-bold uppercase tracking-widest">${currentMode === 'image' ? 'Beast is manifesting' : 'Beast is thinking'}</span></div>
+                    <div class="flex items-center gap-2 mb-2">
+                        <i data-lucide="sparkles" class="w-4 h-4 ${currentMode === 'image' ? 'animate-pulse' : ''}" style="stroke: url(#gemini-gradient);"></i>
+                        <span class="text-xs font-bold uppercase tracking-widest gemini-text">${currentMode === 'image' ? 'Beast is manifesting' : 'Beast is thinking'}</span>
+                    </div>
                     <div id="beast-box-${msgId}" class="bg-white border border-zinc-200 p-6 sm:p-8 shadow-sm w-full rounded-2xl rounded-tl-sm text-[15px] font-medium leading-relaxed prose prose-zinc prose-sm break-words overflow-x-hidden transition-colors">
                         <div id="loader-${msgId}" class="flex items-center justify-between w-full"><div class="flex items-end h-6 text-zinc-900"><span class="dot">.</span><span class="dot">.</span><span class="dot">.</span></div><span id="percent-${msgId}" class="text-xs font-mono font-bold text-zinc-500 bg-zinc-100 px-3 py-1.5 rounded">0%</span></div>
                     </div>
@@ -228,7 +283,6 @@
             const formData = new FormData(); formData.append('message', msg); formData.append('mode', currentMode);
             
             let session = JSON.parse(localStorage.getItem(currentSessionId)) || { pinned: false, messages: [] };
-            
             let chatHistory = session.messages.slice(-100).map(m => ({ type: m.type, message: m.message || "" }));
             formData.append('history', JSON.stringify(chatHistory));
 
@@ -270,6 +324,11 @@
                     targetBox.querySelectorAll('pre').forEach(pre => pre.classList.add('bg-zinc-900', 'text-zinc-100', 'p-4', 'rounded-lg', 'overflow-x-auto', 'my-4'));
                 }
                 
+                // Switch the shimmering text back to normal black text once the response arrives!
+                const headerElement = targetBox.previousElementSibling;
+                headerElement.innerHTML = `<i data-lucide="sparkles" class="w-4 h-4"></i><span class="text-xs font-bold uppercase tracking-widest">Beast</span>`;
+                lucide.createIcons();
+
                 session.messages.push({type:'user', message:msg, files: currentFilesSnapshot}, {type:'beast', message:replyText, mode: currentMode});
                 localStorage.setItem(currentSessionId, JSON.stringify(session));
                 
@@ -286,7 +345,6 @@
         function appendHistoryMessage(m) {
             const chatBox = document.getElementById('chat-box');
             if (m.type === 'user') {
-                // 🚀 THE UI UPGRADE: Applied to history messages too!
                 let inner = `
                 <div class="flex flex-col items-end ml-auto max-w-[85%]">
                     <div class="flex items-center gap-2 mb-2 text-zinc-500">
