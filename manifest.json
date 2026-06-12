@@ -8,7 +8,7 @@
   "icons": [
     {
       "src": "/beast_ai.png",
-      "sizes": "1779x1024",
+      "sizes": "192x192 512x512 1779x1024",
       "type": "image/png",
       "purpose": "any maskable"
     }
