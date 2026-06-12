@@ -22,6 +22,7 @@
         
         .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #d4d4d8; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background-color: #000; }
         
         .dot { display: inline-block; animation: bounce 1.4s infinite ease-in-out both; font-size: 2.5rem; line-height: 0.2; margin-right: 2px; }
         .dot:nth-child(1) { animation-delay: -0.32s; }
@@ -37,31 +38,40 @@
 
         @media (min-width: 1024px) { .desktop-collapsed { margin-left: -18rem; } }
 
-        /* SAFE DARK MODE OVERRIDES */
+        /* PERFECTED DARK MODE OVERRIDES */
         body.dark { background-color: #09090b !important; color: #f4f4f5 !important; }
-        body.dark .bg-white { background-color: #18181b !important; border-color: #27272a !important; }
+        body.dark .bg-white { background-color: #18181b !important; border-color: #27272a !important; color: #f4f4f5 !important; }
         body.dark .bg-zinc-50 { background-color: #09090b !important; }
         body.dark .text-black, body.dark .text-zinc-900 { color: #f4f4f5 !important; }
         body.dark .border-black, body.dark .border-zinc-200, body.dark .border-zinc-300 { border-color: #27272a !important; }
-        body.dark .bg-black { background-color: #f4f4f5 !important; color: #18181b !important; }
-        body.dark .text-white { color: #18181b !important; }
+        body.dark .bg-black { background-color: #27272a !important; color: #f4f4f5 !important; }
+        body.dark .text-white { color: #f4f4f5 !important; }
         body.dark .text-zinc-400, body.dark .text-zinc-500, body.dark .text-zinc-600 { color: #a1a1aa !important; }
         body.dark .bg-zinc-100 { background-color: #27272a !important; color: #f4f4f5 !important; }
-        body.dark .hover\:bg-zinc-800:hover { background-color: #d4d4d8 !important; }
+        body.dark .hover\:bg-zinc-800:hover { background-color: #3f3f46 !important; }
         body.dark .bg-red-50 { background-color: #450a0a !important; color: #fca5a5 !important; border-color: #7f1d1d !important;}
         body.dark .bg-red-100 { background-color: #7f1d1d !important; color: #fca5a5 !important;}
         body.dark aside, body.dark header, body.dark footer, body.dark textarea { background-color: #18181b !important; border-color: #27272a !important; color: #f4f4f5 !important; }
+        body.dark .prose, body.dark .prose * { color: #f4f4f5 !important; }
     </style>
 </head>
 <body class="flex h-[100dvh] w-full">
     <svg style="width:0;height:0;position:absolute;" aria-hidden="true" focusable="false"><linearGradient id="gemini-gradient" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#4285f4" /><stop offset="33%" stop-color="#9b72cb" /><stop offset="66%" stop-color="#d96570" /><stop offset="100%" stop-color="#fbbc05" /></linearGradient></svg>
 
-    <aside id="sidebar" class="fixed lg:relative top-0 left-0 h-full w-72 bg-white border-r border-zinc-200 p-6 flex flex-col z-40 transition-all duration-300 ease-in-out -translate-x-full lg:translate-x-0">
-        <div class="flex items-center justify-between mb-8"><span class="font-beast-logo text-xl font-bold uppercase tracking-widest text-black">HISTORY</span><button onclick="clearUnpinned()" class="text-[10px] font-black text-zinc-400 hover:text-red-600 transition uppercase tracking-tighter">Clear All</button></div>
+    <div id="mobile-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/60 z-30 hidden lg:hidden backdrop-blur-sm transition-opacity"></div>
+
+    <aside id="sidebar" class="fixed lg:relative top-0 left-0 h-full w-72 bg-white border-r border-zinc-200 p-6 flex flex-col z-40 transition-transform duration-300 ease-in-out -translate-x-full lg:translate-x-0">
+        <div class="flex items-center justify-between mb-8">
+            <span class="font-beast-logo text-xl font-bold uppercase tracking-widest text-black">HISTORY</span>
+            <div class="flex items-center gap-4">
+                <button onclick="clearUnpinned()" class="text-[10px] font-black text-zinc-400 hover:text-red-600 transition uppercase tracking-tighter">Clear All</button>
+                <button onclick="toggleSidebar()" class="lg:hidden text-zinc-400 hover:text-black transition"><i data-lucide="menu" class="w-6 h-6"></i></button>
+            </div>
+        </div>
         <button onclick="startNewChat()" class="flex items-center gap-3 bg-black text-white p-4 rounded-lg text-sm font-bold hover:bg-zinc-800 transition mb-6 shadow-md"><i data-lucide="plus-circle" class="w-5 h-5"></i> New Session</button>
         <nav id="history-list" class="flex-1 space-y-2 overflow-y-auto custom-scrollbar"></nav>
         <button onclick="toggleTheme()" class="mt-4 flex items-center gap-3 w-full p-3 border-2 border-zinc-200 rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-zinc-100 transition text-black"><i data-lucide="moon" id="theme-icon" class="w-4 h-4"></i> <span id="theme-text">Dark Mode</span></button>
-        <div class="border-t pt-4 mt-4 text-[10px] text-zinc-400 font-bold tracking-widest text-center uppercase">Beast Core v10.4</div>
+        <div class="border-t pt-4 mt-4 text-[10px] text-zinc-400 font-bold tracking-widest text-center uppercase">Beast Core v10.7</div>
     </aside>
 
     <div class="flex-1 flex flex-col min-w-0 bg-zinc-50 relative">
@@ -77,7 +87,18 @@
         let currentSessionId = null, loadingInterval = null;
 
         function toggleTheme() { document.body.classList.toggle('dark'); const isDark = document.body.classList.contains('dark'); localStorage.setItem('beast-theme', isDark ? 'dark' : 'light'); document.getElementById('theme-icon').setAttribute('data-lucide', isDark ? 'sun' : 'moon'); document.getElementById('theme-text').innerText = isDark ? 'Light Mode' : 'Dark Mode'; document.getElementById('theme-color-meta').setAttribute('content', isDark ? '#09090b' : '#fafafa'); lucide.createIcons(); }
-        function toggleSidebar() { const sb = document.getElementById('sidebar'); if (window.innerWidth >= 1024) { sb.classList.toggle('desktop-collapsed'); } else { sb.classList.toggle('-translate-x-full'); } }
+        
+        function toggleSidebar() { 
+            const sb = document.getElementById('sidebar'); 
+            const overlay = document.getElementById('mobile-overlay');
+            if (window.innerWidth >= 1024) { 
+                sb.classList.toggle('desktop-collapsed'); 
+            } else { 
+                sb.classList.toggle('-translate-x-full'); 
+                overlay.classList.toggle('hidden');
+            } 
+        }
+        
         function handleEnter(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }
         function setMode(m) { 
             currentMode = m;
@@ -86,7 +107,6 @@
             document.getElementById('user-input').placeholder = m === 'chat' ? "Speak to the Beast..." : "Describe a vision to manifest...";
         }
         
-        // 🚀 Register Service Worker for PWABuilder APK Conversion
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW registration failed:', err));
         }
@@ -101,14 +121,12 @@
                 const response = await fetch(url);
                 const blob = await response.blob();
                 const blobUrl = window.URL.createObjectURL(blob);
-                
                 const a = document.createElement('a');
                 a.style.display = 'none';
                 a.href = blobUrl;
                 a.download = `Beast-Image-${Date.now()}.jpg`;
                 document.body.appendChild(a);
                 a.click();
-                
                 window.URL.revokeObjectURL(blobUrl);
                 document.body.removeChild(a);
             } catch (err) {
@@ -156,11 +174,25 @@
             document.getElementById('welcome-box').style.display = 'none';
             const chatBox = document.getElementById('chat-box'); chatBox.innerHTML = ''; chatBox.classList.replace('hidden', 'flex');
             session.messages.forEach(m => appendHistoryMessage(m));
-            if(window.innerWidth < 1024) document.getElementById('sidebar').classList.add('-translate-x-full'); // Auto-close on mobile when loading chat
+            
+            if(window.innerWidth < 1024) { 
+                document.getElementById('sidebar').classList.add('-translate-x-full'); 
+                document.getElementById('mobile-overlay').classList.add('hidden');
+            } 
             loadHistory();
         }
 
-        function startNewChat() { currentSessionId = null; document.getElementById('chat-box').innerHTML = ''; document.getElementById('chat-box').classList.replace('flex', 'hidden'); document.getElementById('welcome-box').style.display = 'block'; }
+        function startNewChat() { 
+            currentSessionId = null; 
+            document.getElementById('chat-box').innerHTML = ''; 
+            document.getElementById('chat-box').classList.replace('flex', 'hidden'); 
+            document.getElementById('welcome-box').style.display = 'block'; 
+            
+            if(window.innerWidth < 1024) { 
+                document.getElementById('sidebar').classList.add('-translate-x-full'); 
+                document.getElementById('mobile-overlay').classList.add('hidden');
+            }
+        }
 
         async function compressImage(file, maxWidth = 600) {
             if (file.type === 'application/pdf' || !file.type.startsWith('image/')) return file;
@@ -177,7 +209,6 @@
             });
         }
 
-        // 🚀 FULLY RESTORED SEND MESSAGE FUNCTION
         async function sendMessage() {
             const input = document.getElementById('user-input'); const msg = input.value.trim();
             if (!msg && attachedFiles.length === 0) return;
