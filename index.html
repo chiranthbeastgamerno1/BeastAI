@@ -4,13 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
     <title>Beast AI</title>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#fafafa" id="theme-color-meta">
+    
     <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@900&family=Inter:wght@400;500;600;700;800&display=swap');
         
-        body { background-color: #fafafa; color: #18181b; font-family: 'Inter', sans-serif; overflow: hidden; -webkit-font-smoothing: antialiased; }
+        body { background-color: #fafafa; color: #18181b; font-family: 'Inter', sans-serif; overflow: hidden; -webkit-font-smoothing: antialiased; transition: background-color 0.3s, color 0.3s; }
         .font-beast-logo { font-family: 'Playfair Display', serif; }
         
         .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
@@ -44,12 +47,31 @@
             -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: inline-block;
         }
 
-        /* 🚀 THE DESKTOP SLIDE ANIMATION: Hides the 72-width (18rem) sidebar smoothly! */
+        /* 🚀 THE DESKTOP SLIDE ANIMATION */
         @media (min-width: 1024px) {
             .desktop-collapsed {
                 margin-left: -18rem; 
             }
         }
+
+        /* 🚀 SAFE DARK MODE OVERRIDES (Touches ZERO JS logic) */
+        body.dark { background-color: #09090b !important; color: #f4f4f5 !important; }
+        body.dark .bg-white { background-color: #18181b !important; border-color: #27272a !important; }
+        body.dark .bg-zinc-50 { background-color: #09090b !important; }
+        body.dark .text-black, body.dark .text-zinc-900 { color: #f4f4f5 !important; }
+        body.dark .border-black, body.dark .border-zinc-200, body.dark .border-zinc-300 { border-color: #27272a !important; }
+        body.dark .bg-black { background-color: #f4f4f5 !important; color: #18181b !important; }
+        body.dark .text-white { color: #18181b !important; }
+        body.dark .text-zinc-400, body.dark .text-zinc-500, body.dark .text-zinc-600 { color: #a1a1aa !important; }
+        body.dark .bg-zinc-100 { background-color: #27272a !important; color: #f4f4f5 !important; }
+        body.dark .hover\:bg-zinc-800:hover { background-color: #d4d4d8 !important; }
+        /* Error States Dark Mode */
+        body.dark .bg-red-50 { background-color: #450a0a !important; color: #fca5a5 !important; border-color: #7f1d1d !important;}
+        body.dark .text-red-900 { color: #fca5a5 !important; }
+        body.dark .border-red-900 { border-color: #7f1d1d !important; }
+        body.dark .bg-red-100 { background-color: #7f1d1d !important; color: #fca5a5 !important;}
+        /* UI Element fixes */
+        body.dark aside, body.dark header, body.dark footer, body.dark textarea { background-color: #18181b !important; border-color: #27272a !important; color: #f4f4f5 !important; }
     </style>
 </head>
 <body class="flex h-[100dvh] w-full">
@@ -72,7 +94,11 @@
             <i data-lucide="plus-circle" class="w-5 h-5"></i> New Session
         </button>
         <nav id="history-list" class="flex-1 space-y-2 overflow-y-auto custom-scrollbar"></nav>
-        <div class="border-t pt-4 text-[10px] text-zinc-400 font-bold tracking-widest text-center uppercase">Beast Core v10.4</div>
+        
+        <button onclick="toggleTheme()" class="mt-4 flex items-center gap-3 w-full p-3 border-2 border-zinc-200 rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-zinc-100 transition text-black">
+            <i data-lucide="moon" id="theme-icon" class="w-4 h-4"></i> <span id="theme-text">Dark Mode</span>
+        </button>
+        <div class="border-t pt-4 mt-4 text-[10px] text-zinc-400 font-bold tracking-widest text-center uppercase">Beast Core v10.4</div>
     </aside>
 
     <div class="flex-1 flex flex-col min-w-0 bg-zinc-50 relative">
@@ -124,14 +150,27 @@
         let attachedFiles = [];
         let currentSessionId = null, loadingInterval = null;
 
-        // 🚀 UPDATED TOGGLE LOGIC: Controls both Mobile overlap and Desktop sliding!
+        // 🚀 THEME TOGGLE FUNCTION (Saves to memory without breaking anything)
+        function toggleTheme() {
+            document.body.classList.toggle('dark');
+            const isDark = document.body.classList.contains('dark');
+            localStorage.setItem('beast-theme', isDark ? 'dark' : 'light');
+            document.getElementById('theme-icon').setAttribute('data-lucide', isDark ? 'sun' : 'moon');
+            document.getElementById('theme-text').innerText = isDark ? 'Light Mode' : 'Dark Mode';
+            document.getElementById('theme-color-meta').setAttribute('content', isDark ? '#09090b' : '#fafafa');
+            lucide.createIcons();
+        }
+
+        // 🚀 Register Service Worker for PWABuilder APK Conversion
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW registration failed:', err));
+        }
+
         function toggleSidebar() { 
             const sb = document.getElementById('sidebar');
             if (window.innerWidth >= 1024) {
-                // On Desktop: Push it left smoothly
                 sb.classList.toggle('desktop-collapsed');
             } else {
-                // On Mobile: Slide it over the screen
                 sb.classList.toggle('-translate-x-full');
             }
         }
@@ -404,7 +443,12 @@
         }
         function removeSpecificAttachment(index) { attachedFiles.splice(index, 1); renderAttachmentPreviews(); }
         function clearAllAttachments() { attachedFiles = []; document.getElementById('file-input').value = ''; renderAttachmentPreviews(); }
-        window.onload = loadHistory;
+        
+        // 🚀 Checks memory for Dark Mode on startup
+        window.onload = () => { 
+            if(localStorage.getItem('beast-theme') === 'dark') { toggleTheme(); }
+            loadHistory(); 
+        };
     </script>
 </body>
 </html>
