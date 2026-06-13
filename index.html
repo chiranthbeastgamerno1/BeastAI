@@ -386,7 +386,6 @@
             setTimeout(() => { btn.innerHTML = `<i data-lucide="download" class="w-4 h-4"></i> Download`; lucide.createIcons(); }, 1000);
         }
 
-        // 🚀 RENAME FEATURE & PIN BUTTONS RESTORED
         function loadHistory() {
             const keys = Object.keys(localStorage).filter(k => k.startsWith('BeastSession_')).sort().reverse();
             const mobileList = document.getElementById('history-list-mobile');
@@ -497,7 +496,6 @@
 
             const msgId = Date.now();
             
-            // 🚀 THE NEW MAJESTIC IMAGE LOADER VS NORMAL LOADER
             let loaderHTML = '';
             if (currentMode === 'image') {
                 loaderHTML = `
@@ -537,20 +535,26 @@
             for (let i = 0; i < attachedFiles.length; i++) { formData.append('files', await compressImage(attachedFiles[i].file)); }
             clearAllAttachments();
 
+            // 🚀 THE BUG FIX: HIDING THE LOADER PROPERLY
             try {
                 const res = await fetch('/api/chat', { method: 'POST', body: formData });
                 const data = await res.json();
                 
-                document.getElementById(`loader-${msgId}`).style.display = 'none';
+                const loader = document.getElementById(`loader-${msgId}`);
                 const targetBoxWrap = document.getElementById(`beast-box-${msgId}`);
-                targetBoxWrap.classList.remove('hidden');
                 const targetBox = targetBoxWrap.querySelector('.prose');
                 
                 let replyText = data.reply || "Connection severed.";
                 
                 if (currentMode === 'image' && (replyText.startsWith('http') || replyText.startsWith('data:'))) {
+                    // Start downloading the image
                     const img = new Image();
+                    
+                    // ONLY hide the loader when the image finishes downloading successfully
                     img.onload = () => {
+                        loader.style.display = 'none';
+                        targetBoxWrap.classList.remove('hidden');
+                        
                         targetBox.innerHTML = `
                         <div class="flex flex-col items-start gap-4">
                             <img src="${replyText}" class="max-w-full max-h-[350px] w-auto object-contain rounded-xl shadow-md">
@@ -560,8 +564,22 @@
                         </div>`;
                         lucide.createIcons(); document.getElementById('scroll-container').scrollTop = document.getElementById('scroll-container').scrollHeight;
                     };
+                    
+                    // Or hide it if the image link is broken
+                    img.onerror = () => {
+                        loader.style.display = 'none';
+                        targetBoxWrap.classList.remove('hidden');
+                        targetBox.innerHTML = marked.parse("Failed to load the manifested image! 😵");
+                    };
+                    
+                    // Trigger the download
                     img.src = replyText; 
+                    
                 } else {
+                    // For standard text chats, hide immediately as before
+                    loader.style.display = 'none';
+                    targetBoxWrap.classList.remove('hidden');
+                    
                     targetBox.innerHTML = marked.parse(replyText);
                     targetBox.querySelectorAll('pre').forEach(pre => pre.classList.add('bg-[#1e1e20]', 'text-zinc-100', 'p-4', 'rounded-xl', 'overflow-x-auto', 'my-4', 'border', 'border-zinc-800'));
                 }
