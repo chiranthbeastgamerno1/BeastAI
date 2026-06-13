@@ -83,6 +83,18 @@
 </head>
 <body class="flex h-[100dvh] w-full text-base">
 
+    <div id="name-modal" class="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center hidden backdrop-blur-md px-4">
+        <div class="bg-white dark:bg-[#1e1e20] p-6 sm:p-8 rounded-3xl shadow-2xl max-w-sm w-full border border-zinc-200 dark:border-zinc-800 transform transition-all">
+            <div class="flex justify-center mb-4">
+                <img src="/beast_ai.png" class="w-16 h-16 rounded-full shadow-md object-cover">
+            </div>
+            <h3 class="text-xl font-bold text-center text-black dark:text-white mb-2">Initialize Beast AI</h3>
+            <p class="text-sm text-center text-zinc-500 dark:text-zinc-400 mb-6">By what name shall the Beast address you?</p>
+            <input type="text" id="name-input" onkeydown="if(event.key === 'Enter') saveName()" class="w-full bg-zinc-100 dark:bg-[#0e0e11] text-black dark:text-white border-none rounded-xl px-4 py-3.5 mb-6 outline-none focus:ring-2 focus:ring-zinc-400 font-medium text-center" placeholder="Enter your name...">
+            <button onclick="saveName()" class="w-full bg-zinc-900 hover:bg-black dark:bg-white text-white dark:text-black font-bold py-3.5 rounded-xl transition-transform active:scale-95 shadow-lg">Confirm</button>
+        </div>
+    </div>
+
     <div id="mobile-overlay" onclick="toggleMobileSidebar()" class="fixed inset-0 bg-black/40 z-40 hidden lg:hidden backdrop-blur-[2px] transition-opacity pt-safe"></div>
 
     <aside id="mobile-sidebar" class="fixed inset-y-0 left-0 w-72 bg-[#f8f9fa] dark:bg-[#131314] z-50 transform -translate-x-full transition-transform duration-300 flex flex-col pt-safe lg:hidden border-r border-zinc-200 dark:border-zinc-800">
@@ -142,15 +154,14 @@
                 <div id="welcome-box" class="w-full mx-auto text-center flex flex-col items-center justify-center mt-[15vh]">
                     <img src="/beast_ai.png" class="w-16 h-16 sm:w-20 sm:h-20 mb-6 object-cover rounded-full shadow-lg shadow-black/10 dark:shadow-white/5 animate-pulse" alt="Beast AI">
                     <h2 id="greeting-text" class="text-3xl sm:text-4xl font-medium tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-zinc-800 to-zinc-500 dark:from-zinc-100 dark:to-zinc-400 pb-2">
-                        The mic is yours, MEGHANA
-                    </h2>
+                        </h2>
                 </div>
                 
                 <div id="chat-box" class="w-full space-y-8 hidden flex-col pb-10"></div>
             </div>
         </main>
 
-        <div class="fixed bottom-0 left-0 lg:left-16 right-0 z-30 pb-safe bg-gradient-to-t from-[#f0f4f9] dark:from-[#0e0e11] to-transparent pointer-events-none">
+        <div class="fixed bottom-0 left-0 lg:left-16 right-0 z-30 pb-safe bg-gradient-to-t from-[var(--aurora-bottom)] dark:from-[#0e0e11] to-transparent pointer-events-none">
             <div class="max-w-3xl mx-auto px-4 pb-2 pt-10 pointer-events-auto">
                 
                 <div class="hidden lg:flex items-center gap-6 mb-3 ml-4">
@@ -160,7 +171,7 @@
                 
                 <div id="attachment-preview" class="hidden relative ml-4 mb-3 flex gap-2 overflow-x-auto custom-scrollbar max-w-full"></div>
                 
-                <div class="relative flex items-end w-full bg-white dark:bg-[#1e1e20] rounded-[2rem] sm:rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.08)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.3)] px-1 sm:px-2 py-1">
+                <div class="relative flex items-end w-full bg-white dark:bg-[#1e1e20] rounded-[2rem] sm:rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.08)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.3)] px-1 sm:px-2 py-1 border border-zinc-100 dark:border-zinc-800">
                     <button onclick="document.getElementById('file-input').click()" class="p-3 sm:p-3.5 text-zinc-500 hover:text-black dark:hover:text-white transition-colors rounded-full mb-0.5"><i data-lucide="paperclip" class="w-5 h-5"></i></button>
                     <input type="file" id="file-input" class="hidden" accept="image/*,application/pdf" multiple onchange="handleFile(this)">
                     
@@ -178,25 +189,45 @@
         let currentMode = 'chat';
         let attachedFiles = [];
         let currentSessionId = null, loadingInterval = null;
+        let userName = localStorage.getItem('beast-username');
 
-        // Dynamic Greetings
-        const greetings = ["Ask away, MEGHANA!", "The mic is yours, MEGHANA", "Your move, MEGHANA!"];
-        document.getElementById('greeting-text').innerText = greetings[Math.floor(Math.random() * greetings.length)];
+        // 🚀 NAME INITIALIZATION LOGIC
+        function initName() {
+            if (!userName) {
+                document.getElementById('name-modal').classList.remove('hidden');
+                setTimeout(() => document.getElementById('name-input').focus(), 100);
+            } else {
+                setGreeting();
+            }
+        }
+
+        function saveName() {
+            const input = document.getElementById('name-input').value.trim();
+            if (input) {
+                userName = input.toUpperCase();
+                localStorage.setItem('beast-username', userName);
+                document.getElementById('name-modal').classList.add('hidden');
+                setGreeting();
+            }
+        }
+
+        function setGreeting() {
+            const nameToUse = userName || "MASTER";
+            const greetings = [`Ask away, ${nameToUse}!`, `The mic is yours, ${nameToUse}`, `Your move, ${nameToUse}!`];
+            document.getElementById('greeting-text').innerText = greetings[Math.floor(Math.random() * greetings.length)];
+        }
 
         function toggleTheme() { 
             document.body.classList.toggle('dark'); 
             const isDark = document.body.classList.contains('dark'); 
             localStorage.setItem('beast-theme', isDark ? 'dark' : 'light'); 
             
-            // Update Mobile Sidebar Toggle
             document.getElementById('theme-icon-mobile').setAttribute('data-lucide', isDark ? 'sun' : 'moon'); 
             document.getElementById('theme-text-mobile').innerText = isDark ? 'Light Mode' : 'Dark Mode'; 
             
-            // Update Desktop Sidebar Toggle
             document.getElementById('theme-icon-desktop').setAttribute('data-lucide', isDark ? 'sun' : 'moon'); 
             document.getElementById('theme-text-desktop').innerText = isDark ? 'Light Mode' : 'Dark Mode'; 
             
-            // Matches Android System Status Bar to the gradient
             document.getElementById('theme-color-meta').setAttribute('content', isDark ? '#0e0e11' : '#f0f4f9'); 
             lucide.createIcons(); 
         }
@@ -215,13 +246,11 @@
             const input = document.getElementById('user-input');
             input.placeholder = m === 'chat' ? "Ask Beast..." : "Describe an image...";
             
-            // PC Button Styles
             const btnChatPC = document.getElementById('btn-chat-pc');
             const btnImgPC = document.getElementById('btn-image-pc');
             if (btnChatPC) btnChatPC.className = m === 'chat' ? 'text-xs font-bold uppercase tracking-widest text-black dark:text-white border-b-2 border-black dark:border-white pb-1 transition-colors' : 'text-xs font-bold uppercase tracking-widest text-zinc-500 hover:text-black dark:hover:text-white border-b-2 border-transparent pb-1 transition-colors';
             if (btnImgPC) btnImgPC.className = m === 'image' ? 'text-xs font-bold uppercase tracking-widest text-black dark:text-white border-b-2 border-black dark:border-white pb-1 flex items-center gap-1.5 transition-colors' : 'text-xs font-bold uppercase tracking-widest text-zinc-500 hover:text-black dark:hover:text-white border-b-2 border-transparent pb-1 flex items-center gap-1.5 transition-colors';
             
-            // Mobile Button Styles
             const btnChatMob = document.getElementById('btn-chat-mobile');
             const btnImgMob = document.getElementById('btn-image-mobile');
             if (btnChatMob) btnChatMob.className = m === 'chat' ? 'flex items-center gap-3 p-3 rounded-full bg-zinc-200 dark:bg-zinc-800 text-sm font-semibold text-black dark:text-white' : 'flex items-center gap-3 p-3 rounded-full text-sm font-semibold text-zinc-600 dark:text-zinc-300';
@@ -337,7 +366,6 @@
 
             const currentFilesSnapshot = attachedFiles.map(f => ({ name: f.name, isPdf: f.isPdf, preview: f.preview }));
             
-            // 🚀 USER BUBBLE
             let userHtml = `
             <div class="flex justify-end w-full">
                 <div class="bg-zinc-100 dark:bg-zinc-800 text-black dark:text-white px-5 py-3 rounded-[1.5rem] rounded-tr-sm max-w-[85%] text-[15px] sm:text-base leading-relaxed shadow-sm">`;
@@ -354,7 +382,6 @@
             userHtml += `</div></div>`;
             chatBox.insertAdjacentHTML('beforeend', userHtml);
 
-            // 🚀 BEAST LOADING (3 Bouncing Dots)
             const msgId = Date.now();
             const beastHtml = `
                 <div id="beast-wrap-${msgId}" class="flex flex-col items-start w-full max-w-[90%]">
@@ -497,6 +524,7 @@
         window.onload = () => { 
             if(localStorage.getItem('beast-theme') === 'dark') { toggleTheme(); }
             loadHistory(); 
+            initName(); // 🚀 Triggers the Name Initialization Check
         };
     </script>
 </body>
