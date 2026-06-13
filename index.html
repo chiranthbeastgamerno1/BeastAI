@@ -39,13 +39,11 @@
             100% { background-position: 0% 50%; }
         }
         body {
-            /* Light Mode: Bright, smooth pastels */
             background: linear-gradient(-45deg, #e8f0fe, #fce4ec, #e0f2fe, #fef3c7, #d1fae5);
             background-size: 300% 300%;
             animation: aurora 15s ease infinite;
         }
         body.dark {
-            /* Dark Mode: Deep, shifting nebulas */
             background: linear-gradient(-45deg, #09090b, #171720, #0f172a, #1e1b4b, #2e1065);
             background-size: 300% 300%;
             animation: aurora 15s ease infinite;
@@ -55,12 +53,10 @@
         .pb-safe { padding-bottom: calc(env(safe-area-inset-bottom) + 24px); }
         .pt-safe { padding-top: env(safe-area-inset-top); }
 
-        /* Scrollbars - Main Chat Only */
+        /* Scrollbars */
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background-color: rgba(0,0,0,0.2); border-radius: 4px; }
         body.dark .custom-scrollbar::-webkit-scrollbar-thumb { background-color: rgba(255,255,255,0.2); }
-        
-        /* Disable Scrollbar for sidebars to prevent the grey box glitch */
         .sidebar-scroll::-webkit-scrollbar { display: none; }
         .sidebar-scroll { -ms-overflow-style: none; scrollbar-width: none; overflow-x: hidden; }
 
@@ -80,29 +76,33 @@
             40% { transform: scale(1); opacity: 1; }
         }
 
+        /* 🚀 TRANSLUCENT IMAGE GENERATION GRID LOADER */
+        .image-gen-grid {
+            background-image: radial-gradient(circle, #a1a1aa 1.5px, transparent 1.5px);
+            background-size: 16px 16px;
+            background-position: 0 0;
+            mask-image: radial-gradient(circle at center, black 10%, transparent 75%);
+            -webkit-mask-image: radial-gradient(circle at center, black 10%, transparent 75%);
+            animation: grid-move 3s linear infinite;
+        }
+        @keyframes grid-move {
+            0% { background-position: 0 0; }
+            100% { background-position: 16px 16px; }
+        }
+
         /* Typography */
         .prose p { margin-top: 0.4em; margin-bottom: 0.4em; }
         .prose ul > li::marker { color: #6b7280; font-size: 1.2em; }
         body.dark .prose ul > li::marker { color: #a1a1aa !important; }
 
-        /* 🚀 LOCKABLE DESKTOP SIDEBAR LOGIC */
-        .desktop-sidebar { 
-            width: 4rem; 
-            overflow-x: hidden; 
-            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
-        }
+        /* Lockable Sidebar Logic */
+        .desktop-sidebar { width: 4rem; overflow-x: hidden; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         .desktop-sidebar:hover:not(.locked) { width: 16rem; }
         .desktop-sidebar.locked { width: 16rem; }
-        
         .desktop-sidebar .nav-text { opacity: 0; transition: opacity 0.2s ease; white-space: nowrap; }
         .desktop-sidebar:hover:not(.locked) .nav-text, 
         .desktop-sidebar.locked .nav-text { opacity: 1; transition-delay: 0.1s; }
-
-        /* Shift Main Content and Pill when Sidebar is Locked */
-        .main-content-shift, .pill-wrapper { 
-            margin-left: 0; 
-            transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
-        }
+        .main-content-shift, .pill-wrapper { margin-left: 0; transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         @media (min-width: 1024px) {
             .main-content-shift, .pill-wrapper { margin-left: 4rem; }
             .main-content-shift.locked, .pill-wrapper.locked { margin-left: 16rem; }
@@ -148,7 +148,7 @@
         
         <div class="flex flex-col gap-1 px-3 mt-2 mb-4 border-b border-black/5 dark:border-white/5 pb-4">
             <button onclick="setMode('chat'); toggleMobileSidebar();" id="btn-chat-mobile" class="flex items-center gap-3 p-3 rounded-full bg-black/5 dark:bg-white/10 text-sm font-semibold text-zinc-900 dark:text-white"><i data-lucide="message-square" class="w-5 h-5"></i> Converse</button>
-            <button onclick="setMode('image'); toggleMobileSidebar();" id="btn-image-mobile" class="flex items-center gap-3 p-3 rounded-full text-sm font-semibold text-zinc-600 dark:text-zinc-400"><i data-lucide="image" class="w-5 h-5"></i> Manifest Image</button>
+            <button onclick="setMode('image'); startNewChat(); toggleMobileSidebar();" id="btn-image-mobile" class="flex items-center gap-3 p-3 rounded-full text-sm font-semibold text-zinc-600 dark:text-zinc-400"><i data-lucide="image" class="w-5 h-5"></i> Manifest Image</button>
         </div>
 
         <div class="flex-1 overflow-y-auto px-3 sidebar-scroll">
@@ -203,13 +203,10 @@
 
         <main id="scroll-container" class="flex-1 overflow-y-auto px-4 sm:px-8 pb-40 custom-scrollbar">
             <div class="max-w-3xl mx-auto space-y-8 mt-10">
-                
                 <div id="welcome-box" class="w-full mx-auto text-center flex flex-col items-center justify-center mt-[15vh]">
                     <img src="/beast_ai.png" class="w-16 h-16 sm:w-20 sm:h-20 mb-6 object-cover rounded-full shadow-lg shadow-black/10 dark:shadow-white/5 animate-pulse bg-black" alt="Beast AI">
-                    <h2 id="greeting-text" class="text-3xl sm:text-4xl font-medium tracking-tight text-zinc-900 dark:text-zinc-100 pb-2">
-                        </h2>
+                    <h2 id="greeting-text" class="text-3xl sm:text-4xl font-medium tracking-tight text-zinc-900 dark:text-zinc-100 pb-2"></h2>
                 </div>
-                
                 <div id="chat-box" class="w-full space-y-8 hidden flex-col pb-10"></div>
             </div>
         </main>
@@ -225,14 +222,14 @@
             
             <div id="attachment-preview" class="hidden relative ml-4 mb-3 flex gap-2 overflow-x-auto custom-scrollbar max-w-full"></div>
             
-            <div class="relative flex items-end w-full bg-white dark:bg-[#1e1e20] rounded-[2rem] sm:rounded-full shadow-[0_4px_20px_rgb(0,0,0,0.08)] dark:shadow-[0_4px_20px_rgb(0,0,0,0.4)] px-1 sm:px-2 py-1 border border-zinc-200 dark:border-zinc-700">
-                <button onclick="document.getElementById('file-input').click()" class="p-3 sm:p-3.5 text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors rounded-full mb-0.5"><i data-lucide="paperclip" class="w-5 h-5"></i></button>
+            <div class="relative flex items-end w-full bg-white dark:bg-[#1e1e20] rounded-[2rem] sm:rounded-[2.5rem] shadow-[0_4px_20px_rgb(0,0,0,0.08)] dark:shadow-[0_4px_20px_rgb(0,0,0,0.4)] px-1 sm:px-2 py-1 border border-zinc-200 dark:border-zinc-700">
+                <button onclick="document.getElementById('file-input').click()" class="p-3 sm:p-3.5 text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors rounded-full mb-1.5"><i data-lucide="paperclip" class="w-5 h-5"></i></button>
                 <input type="file" id="file-input" class="hidden" accept="image/*,application/pdf" multiple onchange="handleFile(this)">
                 
                 <textarea id="user-input" rows="1" class="flex-1 bg-transparent border-none outline-none resize-none max-h-32 py-3.5 px-2 text-[15px] sm:text-base text-zinc-900 dark:text-white placeholder-zinc-500 leading-relaxed mb-0.5" placeholder="Ask Beast..." onkeydown="handleEnter(event)"></textarea>
                 
-                <button class="p-3 sm:p-3.5 text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors rounded-full mb-0.5"><i data-lucide="mic" class="w-5 h-5"></i></button>
-                <button id="send-btn" onclick="sendMessage()" class="p-3 bg-zinc-900 hover:bg-black dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-black rounded-full transition-transform active:scale-95 mb-0.5 mr-0.5 shadow-sm"><i data-lucide="arrow-up" class="w-5 h-5"></i></button>
+                <button class="p-3 sm:p-3.5 text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors rounded-full mb-1.5"><i data-lucide="mic" class="w-5 h-5"></i></button>
+                <button id="send-btn" onclick="sendMessage()" class="p-3 bg-zinc-900 hover:bg-black dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-black rounded-full transition-transform active:scale-95 mb-1.5 mr-0.5 shadow-sm"><i data-lucide="arrow-up" class="w-5 h-5"></i></button>
             </div>
         </div>
     </div>
@@ -389,6 +386,7 @@
             setTimeout(() => { btn.innerHTML = `<i data-lucide="download" class="w-4 h-4"></i> Download`; lucide.createIcons(); }, 1000);
         }
 
+        // 🚀 RENAME FEATURE & PIN BUTTONS RESTORED
         function loadHistory() {
             const keys = Object.keys(localStorage).filter(k => k.startsWith('BeastSession_')).sort().reverse();
             const mobileList = document.getElementById('history-list-mobile');
@@ -397,7 +395,7 @@
 
             keys.forEach(id => {
                 const session = JSON.parse(localStorage.getItem(id));
-                const preview = session.messages?.[0]?.message || "Manifestation";
+                const preview = session.title || session.messages?.[0]?.message || "Manifestation";
                 const isCurrent = id === currentSessionId;
                 
                 const html = `
@@ -406,15 +404,32 @@
                         <i data-lucide="message-square" class="w-4 h-4 flex-shrink-0 text-zinc-500 pl-1"></i>
                         <div class="font-medium text-sm truncate nav-text text-zinc-900 dark:text-white">${preview}</div>
                     </div>
-                    <button onclick="togglePin('${id}', event)" class="flex-shrink-0 text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-opacity opacity-100 lg:opacity-0 lg:group-hover:opacity-100 pr-1 z-10">
-                        <i data-lucide="pin" class="w-3.5 h-3.5 ${session.pinned ? 'fill-current text-zinc-900 dark:text-white lg:opacity-100' : ''}"></i>
-                    </button>
+                    <div class="flex items-center flex-shrink-0 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity pr-1 z-10 gap-0.5">
+                        <button onclick="renameSession('${id}', event)" class="p-1 text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors">
+                            <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+                        </button>
+                        <button onclick="togglePin('${id}', event)" class="p-1 text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors">
+                            <i data-lucide="pin" class="w-3.5 h-3.5 ${session.pinned ? 'fill-current text-zinc-900 dark:text-white lg:opacity-100' : ''}"></i>
+                        </button>
+                    </div>
                 </div>`;
                 
                 mobileList.insertAdjacentHTML('beforeend', html);
                 desktopList.insertAdjacentHTML('beforeend', html);
             });
             lucide.createIcons();
+        }
+
+        function renameSession(id, e) {
+            e.stopPropagation();
+            const session = JSON.parse(localStorage.getItem(id));
+            const currentName = session.title || session.messages?.[0]?.message || "Manifestation";
+            const newName = prompt("Rename this chat:", currentName);
+            if (newName !== null && newName.trim() !== "") {
+                session.title = newName.trim();
+                localStorage.setItem(id, JSON.stringify(session));
+                loadHistory();
+            }
         }
 
         function clearUnpinned() { if(!confirm("Clear all history?")) return; const keys = Object.keys(localStorage).filter(k => k.startsWith('BeastSession_')); keys.forEach(id => { const s = JSON.parse(localStorage.getItem(id)); if(!s.pinned) localStorage.removeItem(id); }); startNewChat(); loadHistory(); }
@@ -464,7 +479,6 @@
 
             const currentFilesSnapshot = attachedFiles.map(f => ({ name: f.name, isPdf: f.isPdf, preview: f.preview }));
             
-            // 🚀 USER BUBBLE (Crisp Colors)
             let userHtml = `
             <div class="flex justify-end w-full">
                 <div class="bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 px-5 py-3 rounded-[1.5rem] rounded-tr-sm max-w-[85%] text-[15px] sm:text-base leading-relaxed shadow-sm border border-black/5 dark:border-white/5">`;
@@ -482,15 +496,31 @@
             chatBox.insertAdjacentHTML('beforeend', userHtml);
 
             const msgId = Date.now();
+            
+            // 🚀 THE NEW MAJESTIC IMAGE LOADER VS NORMAL LOADER
+            let loaderHTML = '';
+            if (currentMode === 'image') {
+                loaderHTML = `
+                <div id="loader-${msgId}" class="pl-[2.7rem] sm:pl-[3.2rem] w-full">
+                    <div class="relative w-full aspect-square max-w-[260px] bg-[#1e1e20] rounded-[1.5rem] overflow-hidden flex flex-col p-5 shadow-lg border border-zinc-800 mt-2">
+                        <span class="text-zinc-100 font-semibold text-sm z-10 flex items-center gap-2">Creating image <span class="jumping-dots text-zinc-400"><span></span><span></span><span></span></span></span>
+                        <div class="absolute inset-0 mt-8 image-gen-grid"></div>
+                    </div>
+                </div>`;
+            } else {
+                loaderHTML = `
+                <div id="loader-${msgId}" class="pl-[2.7rem] sm:pl-[3.2rem]">
+                    <div class="jumping-dots text-zinc-500 dark:text-zinc-400 py-2"><span></span><span></span><span></span></div>
+                </div>`;
+            }
+
             const beastHtml = `
                 <div id="beast-wrap-${msgId}" class="flex flex-col items-start w-full max-w-[90%]">
                     <div class="flex items-center gap-3 mb-2">
                         <img src="/beast_ai.png" class="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover shadow-sm bg-black">
                         <span class="text-[13px] font-bold text-zinc-900 dark:text-zinc-100">Beast AI</span>
                     </div>
-                    <div id="loader-${msgId}" class="pl-[2.7rem] sm:pl-[3.2rem]">
-                        <div class="jumping-dots text-zinc-500 dark:text-zinc-400 py-2"><span></span><span></span><span></span></div>
-                    </div>
+                    ${loaderHTML}
                     <div id="beast-box-${msgId}" class="pl-[2.7rem] sm:pl-[3.2rem] w-full hidden">
                         <div class="prose dark:prose-invert prose-sm sm:prose-base leading-relaxed break-words w-full max-w-none text-zinc-900 dark:text-zinc-100"></div>
                     </div>
@@ -621,7 +651,6 @@
         function clearAllAttachments() { attachedFiles = []; document.getElementById('file-input').value = ''; renderAttachmentPreviews(); }
         
         window.onload = () => { 
-            // Ensures theme initializes strictly based on app memory, ignoring OS if previously set
             if(localStorage.getItem('beast-theme') === 'dark') { 
                 document.body.classList.add('dark'); 
             } else if (localStorage.getItem('beast-theme') === 'light') {
