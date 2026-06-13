@@ -8,14 +8,14 @@
     <link rel="icon" href="/beast_ai.png" type="image/png">
     <link rel="apple-touch-icon" href="/beast_ai.png">
     <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#f0f4f9" id="theme-color-meta">
+    <meta name="theme-color" content="#ffffff" id="theme-color-meta">
     
     <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@900&display=swap');
         
         body { 
             font-family: 'Inter', sans-serif; 
@@ -23,29 +23,31 @@
             -webkit-font-smoothing: antialiased; 
             margin: 0;
             padding: 0;
+            transition: color 0.3s;
         }
+        .font-beast-logo { font-family: 'Playfair Display', serif; }
 
-        /* 🚀 THE DYNAMIC AURORA BACKGROUND */
+        /* 🚀 SLEEK AURORA BACKGROUND */
         @keyframes aurora {
             0% { background-position: 0% 50%; }
             50% { background-position: 100% 50%; }
             100% { background-position: 0% 50%; }
         }
         body {
-            background: linear-gradient(135deg, #f0f4f9, #e8f0fe, #ffffff, #e0f2fe);
-            background-size: 300% 300%;
-            animation: aurora 12s ease infinite;
+            background: linear-gradient(-45deg, #f0f4f9, #e8f0fe, #ffffff, #e0f2fe);
+            background-size: 400% 400%;
+            animation: aurora 15s ease infinite;
             color: #1f2937;
         }
         body.dark {
-            background: linear-gradient(135deg, #0e0e11, #16171b, #000000, #131417);
-            background-size: 300% 300%;
-            animation: aurora 12s ease infinite;
+            background: linear-gradient(-45deg, #0f172a, #1e1e24, #000000, #171923);
+            background-size: 400% 400%;
+            animation: aurora 15s ease infinite;
             color: #f4f4f5;
         }
 
-        /* Safe area handling for transparent mobile navigation */
-        .pb-safe { padding-bottom: calc(env(safe-area-inset-bottom) + 16px); }
+        /* Safe area handling */
+        .pb-safe { padding-bottom: calc(env(safe-area-inset-bottom) + 24px); }
         .pt-safe { padding-top: env(safe-area-inset-top); }
 
         /* Scrollbars */
@@ -76,17 +78,21 @@
         body.dark .prose ul > li::marker { color: #a1a1aa !important; }
 
         /* Desktop Sidebar Hover Expansion */
-        .desktop-sidebar { transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .desktop-sidebar { transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); overflow-x: hidden; }
         .desktop-sidebar:hover { width: 16rem; }
         .desktop-sidebar:hover .nav-text { opacity: 1; }
+        
+        /* Sidebar Dark Mode fixes */
+        body.dark .bg-sidebar { background-color: rgba(30, 30, 32, 0.8) !important; }
+        body.dark .border-sidebar { border-color: #27272a !important; }
     </style>
 </head>
 <body class="flex h-[100dvh] w-full text-base">
 
-    <div id="name-modal" class="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center hidden backdrop-blur-md px-4">
+    <div id="name-modal" class="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center hidden backdrop-blur-md px-4 transition-opacity">
         <div class="bg-white dark:bg-[#1e1e20] p-6 sm:p-8 rounded-3xl shadow-2xl max-w-sm w-full border border-zinc-200 dark:border-zinc-800 transform transition-all">
             <div class="flex justify-center mb-4">
-                <img src="/beast_ai.png" class="w-16 h-16 rounded-full shadow-md object-cover">
+                <img src="/beast_ai.png" class="w-16 h-16 rounded-full shadow-md object-cover bg-black">
             </div>
             <h3 class="text-xl font-bold text-center text-black dark:text-white mb-2">Initialize Beast AI</h3>
             <p class="text-sm text-center text-zinc-500 dark:text-zinc-400 mb-6">By what name shall the Beast address you?</p>
@@ -95,17 +101,34 @@
         </div>
     </div>
 
+    <div id="settings-modal" class="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center hidden backdrop-blur-md px-4 transition-opacity">
+        <div class="bg-white dark:bg-[#1e1e20] p-6 sm:p-8 rounded-3xl shadow-2xl max-w-sm w-full border border-zinc-200 dark:border-zinc-800 transform transition-all relative">
+            <button onclick="closeSettings()" class="absolute top-4 right-4 text-zinc-400 hover:text-black dark:hover:text-white transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
+            <div class="flex justify-center mb-4">
+                <div class="w-14 h-14 rounded-full bg-zinc-100 dark:bg-[#0e0e11] flex items-center justify-center text-zinc-600 dark:text-zinc-300 shadow-sm border border-zinc-200 dark:border-zinc-800">
+                    <i data-lucide="user" class="w-6 h-6"></i>
+                </div>
+            </div>
+            <h3 class="text-xl font-bold text-center text-black dark:text-white mb-6">Settings</h3>
+            <div class="mb-6">
+                <label class="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2 pl-1">Your Name</label>
+                <input type="text" id="settings-name-input" onkeydown="if(event.key === 'Enter') saveSettings()" class="w-full bg-zinc-100 dark:bg-[#0e0e11] text-black dark:text-white border-none rounded-xl px-4 py-3.5 outline-none focus:ring-2 focus:ring-zinc-400 font-medium" placeholder="Enter your name...">
+            </div>
+            <button onclick="saveSettings()" class="w-full bg-zinc-900 hover:bg-black dark:bg-white text-white dark:text-black font-bold py-3.5 rounded-xl transition-transform active:scale-95 shadow-lg">Save Changes</button>
+        </div>
+    </div>
+
     <div id="mobile-overlay" onclick="toggleMobileSidebar()" class="fixed inset-0 bg-black/40 z-40 hidden lg:hidden backdrop-blur-[2px] transition-opacity pt-safe"></div>
 
-    <aside id="mobile-sidebar" class="fixed inset-y-0 left-0 w-72 bg-[#f8f9fa] dark:bg-[#131314] z-50 transform -translate-x-full transition-transform duration-300 flex flex-col pt-safe lg:hidden border-r border-zinc-200 dark:border-zinc-800">
+    <aside id="mobile-sidebar" class="fixed inset-y-0 left-0 w-72 bg-white/95 dark:bg-[#131314]/95 backdrop-blur-xl z-50 transform -translate-x-full transition-transform duration-300 flex flex-col pt-safe lg:hidden border-r border-zinc-200 border-sidebar">
         <div class="flex items-center justify-between p-4">
             <button onclick="toggleMobileSidebar()" class="p-2 text-zinc-600 dark:text-zinc-300 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-800"><i data-lucide="menu"></i></button>
             <button onclick="startNewChat()" class="p-2 text-zinc-600 dark:text-zinc-300 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-800"><i data-lucide="edit"></i></button>
         </div>
         
-        <div class="flex flex-col gap-1 px-3 mt-2 mb-4 border-b border-zinc-200 dark:border-zinc-800 pb-4">
+        <div class="flex flex-col gap-1 px-3 mt-2 mb-4 border-b border-zinc-200 border-sidebar pb-4">
             <button onclick="setMode('chat'); toggleMobileSidebar();" id="btn-chat-mobile" class="flex items-center gap-3 p-3 rounded-full bg-zinc-200 dark:bg-zinc-800 text-sm font-semibold text-black dark:text-white"><i data-lucide="message-square" class="w-5 h-5"></i> Converse</button>
-            <button onclick="setMode('image'); toggleMobileSidebar();" id="btn-image-mobile" class="flex items-center gap-3 p-3 rounded-full text-sm font-semibold text-zinc-600 dark:text-zinc-300"><i data-lucide="image" class="w-5 h-5"></i> Manifest Image</button>
+            <button onclick="setMode('image'); toggleMobileSidebar();" id="btn-image-mobile" class="flex items-center gap-3 p-3 rounded-full text-sm font-semibold text-zinc-600 dark:text-zinc-400"><i data-lucide="image" class="w-5 h-5"></i> Manifest Image</button>
         </div>
 
         <div class="flex-1 overflow-y-auto px-3 custom-scrollbar">
@@ -113,28 +136,38 @@
             <nav id="history-list-mobile" class="space-y-1"></nav>
         </div>
         
-        <div class="p-3 border-t border-zinc-200 dark:border-zinc-800">
+        <div class="p-3 border-t border-zinc-200 border-sidebar">
+            <button onclick="openSettings()" class="flex items-center gap-3 p-3 w-full rounded-full text-sm font-medium hover:bg-zinc-200 dark:hover:bg-zinc-800 transition text-zinc-800 dark:text-zinc-200"><i data-lucide="settings"></i> <span>Settings</span></button>
             <button onclick="toggleTheme()" class="flex items-center gap-3 p-3 w-full rounded-full text-sm font-medium hover:bg-zinc-200 dark:hover:bg-zinc-800 transition text-zinc-800 dark:text-zinc-200"><i data-lucide="moon" id="theme-icon-mobile"></i> <span id="theme-text-mobile">Dark Mode</span></button>
             <button onclick="clearUnpinned()" class="flex items-center gap-3 p-3 w-full rounded-full text-sm font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 mt-1 transition"><i data-lucide="trash-2"></i> Clear History</button>
         </div>
     </aside>
 
-    <aside class="desktop-sidebar hidden lg:flex flex-col w-16 bg-[#f0f4f9]/80 dark:bg-[#1e1e20]/80 backdrop-blur-xl border-r border-zinc-200 dark:border-zinc-800 z-40 h-full fixed left-0 top-0 py-4 group">
+    <aside class="desktop-sidebar hidden lg:flex flex-col w-16 bg-white/70 bg-sidebar backdrop-blur-2xl border-r border-zinc-200 border-sidebar z-40 h-full fixed left-0 top-0 py-4 group">
         <div class="px-3 mb-8 flex items-center">
-            <button class="p-2.5 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-700 flex-shrink-0 text-zinc-600 dark:text-zinc-300"><i data-lucide="menu"></i></button>
+            <button class="p-2.5 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-700 flex-shrink-0 text-zinc-800 dark:text-zinc-200"><i data-lucide="menu"></i></button>
         </div>
         <div class="px-3 mb-6 flex flex-col gap-2">
-            <button onclick="startNewChat()" class="flex items-center gap-4 p-2.5 rounded-full bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 transition-colors whitespace-nowrap overflow-hidden text-black dark:text-white">
+            <button onclick="startNewChat()" class="flex items-center gap-4 p-2.5 rounded-full bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 transition-colors whitespace-nowrap text-black dark:text-white">
                 <i data-lucide="plus" class="flex-shrink-0"></i> 
                 <span class="nav-text text-sm font-semibold opacity-0 transition-opacity">New chat</span>
             </button>
         </div>
         <div class="flex-1 overflow-y-auto px-3 custom-scrollbar">
             <div class="nav-text text-[11px] font-bold text-zinc-500 uppercase tracking-wider mb-2 pl-3 opacity-0 transition-opacity whitespace-nowrap">Recent</div>
-            <nav id="history-list-desktop" class="space-y-1 overflow-hidden"></nav>
+            <nav id="history-list-desktop" class="space-y-1"></nav>
         </div>
-        <div class="px-3 mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-800 flex flex-col gap-2">
-            <button onclick="toggleTheme()" class="flex items-center gap-4 p-2.5 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors whitespace-nowrap overflow-hidden text-zinc-700 dark:text-zinc-300">
+        
+        <div class="px-3 mt-4 pt-4 border-t border-zinc-200 border-sidebar flex flex-col gap-2">
+            <button onclick="clearUnpinned()" class="flex items-center gap-4 p-2.5 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors whitespace-nowrap text-red-500">
+                <i data-lucide="trash-2" class="flex-shrink-0"></i>
+                <span class="nav-text text-sm font-medium opacity-0 transition-opacity">Clear All</span>
+            </button>
+            <button onclick="openSettings()" class="flex items-center gap-4 p-2.5 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors whitespace-nowrap text-zinc-800 dark:text-zinc-200">
+                <i data-lucide="settings" class="flex-shrink-0"></i>
+                <span class="nav-text text-sm font-medium opacity-0 transition-opacity">Settings</span>
+            </button>
+            <button onclick="toggleTheme()" class="flex items-center gap-4 p-2.5 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors whitespace-nowrap text-zinc-800 dark:text-zinc-200">
                 <i data-lucide="moon" id="theme-icon-desktop" class="flex-shrink-0"></i>
                 <span class="nav-text text-sm font-medium opacity-0 transition-opacity" id="theme-text-desktop">Dark Mode</span>
             </button>
@@ -144,16 +177,16 @@
     <div class="flex-1 flex flex-col min-w-0 relative lg:ml-16 pt-safe">
         
         <header class="flex items-center px-4 py-3 lg:hidden relative z-10">
-            <button onclick="toggleMobileSidebar()" class="p-2 text-zinc-600 dark:text-zinc-300 rounded-full"><i data-lucide="menu"></i></button>
-            <h1 class="ml-2 text-lg font-black tracking-widest uppercase text-black dark:text-white" style="font-family: 'Playfair Display', serif;">Beast</h1>
+            <button onclick="toggleMobileSidebar()" class="p-2 text-zinc-800 dark:text-zinc-200 rounded-full"><i data-lucide="menu"></i></button>
+            <h1 class="ml-2 text-lg font-black tracking-widest uppercase text-black dark:text-white font-beast-logo">Beast</h1>
         </header>
 
-        <main id="scroll-container" class="flex-1 overflow-y-auto px-4 sm:px-8 pb-32 custom-scrollbar">
+        <main id="scroll-container" class="flex-1 overflow-y-auto px-4 sm:px-8 pb-40 custom-scrollbar">
             <div class="max-w-3xl mx-auto space-y-8 mt-10">
                 
                 <div id="welcome-box" class="w-full mx-auto text-center flex flex-col items-center justify-center mt-[15vh]">
-                    <img src="/beast_ai.png" class="w-16 h-16 sm:w-20 sm:h-20 mb-6 object-cover rounded-full shadow-lg shadow-black/10 dark:shadow-white/5 animate-pulse" alt="Beast AI">
-                    <h2 id="greeting-text" class="text-3xl sm:text-4xl font-medium tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-zinc-800 to-zinc-500 dark:from-zinc-100 dark:to-zinc-400 pb-2">
+                    <img src="/beast_ai.png" class="w-16 h-16 sm:w-20 sm:h-20 mb-6 object-cover rounded-full shadow-lg shadow-black/10 dark:shadow-white/5 animate-pulse bg-black" alt="Beast AI">
+                    <h2 id="greeting-text" class="text-3xl sm:text-4xl font-medium tracking-tight text-zinc-800 dark:text-zinc-200 pb-2">
                         </h2>
                 </div>
                 
@@ -161,17 +194,17 @@
             </div>
         </main>
 
-        <div class="fixed bottom-0 left-0 lg:left-16 right-0 z-30 pb-safe bg-gradient-to-t from-[var(--aurora-bottom)] dark:from-[#0e0e11] to-transparent pointer-events-none">
-            <div class="max-w-3xl mx-auto px-4 pb-2 pt-10 pointer-events-auto">
+        <div class="fixed bottom-0 left-0 lg:left-16 right-0 z-30 pb-safe pointer-events-none">
+            <div class="max-w-3xl mx-auto px-4 pb-2 pt-6 pointer-events-auto">
                 
                 <div class="hidden lg:flex items-center gap-6 mb-3 ml-4">
-                    <button onclick="setMode('chat')" id="btn-chat-pc" class="text-xs font-bold uppercase tracking-widest text-black dark:text-white border-b-2 border-black dark:border-white pb-1 transition-colors">Converse</button>
-                    <button onclick="setMode('image')" id="btn-image-pc" class="text-xs font-bold uppercase tracking-widest text-zinc-500 hover:text-black dark:hover:text-white border-b-2 border-transparent pb-1 flex items-center gap-1.5 transition-colors"><i data-lucide="image" class="w-3.5 h-3.5"></i> Manifest Image</button>
+                    <button onclick="setMode('chat')" id="btn-chat-pc" class="text-xs font-bold uppercase tracking-widest text-black dark:text-white border-b-2 border-black dark:border-white pb-1 transition-colors drop-shadow-sm">Converse</button>
+                    <button onclick="setMode('image')" id="btn-image-pc" class="text-xs font-bold uppercase tracking-widest text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white border-b-2 border-transparent pb-1 flex items-center gap-1.5 transition-colors drop-shadow-sm"><i data-lucide="image" class="w-3.5 h-3.5"></i> Manifest Image</button>
                 </div>
                 
                 <div id="attachment-preview" class="hidden relative ml-4 mb-3 flex gap-2 overflow-x-auto custom-scrollbar max-w-full"></div>
                 
-                <div class="relative flex items-end w-full bg-white dark:bg-[#1e1e20] rounded-[2rem] sm:rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.08)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.3)] px-1 sm:px-2 py-1 border border-zinc-100 dark:border-zinc-800">
+                <div class="relative flex items-end w-full bg-white dark:bg-[#1e1e20] rounded-[2rem] sm:rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.12)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.5)] px-1 sm:px-2 py-1 border border-zinc-100 dark:border-zinc-800 backdrop-blur-xl">
                     <button onclick="document.getElementById('file-input').click()" class="p-3 sm:p-3.5 text-zinc-500 hover:text-black dark:hover:text-white transition-colors rounded-full mb-0.5"><i data-lucide="paperclip" class="w-5 h-5"></i></button>
                     <input type="file" id="file-input" class="hidden" accept="image/*,application/pdf" multiple onchange="handleFile(this)">
                     
@@ -191,7 +224,7 @@
         let currentSessionId = null, loadingInterval = null;
         let userName = localStorage.getItem('beast-username');
 
-        // 🚀 NAME INITIALIZATION LOGIC
+        // 🚀 NAME INITIALIZATION & SETTINGS LOGIC
         function initName() {
             if (!userName) {
                 document.getElementById('name-modal').classList.remove('hidden');
@@ -208,6 +241,32 @@
                 localStorage.setItem('beast-username', userName);
                 document.getElementById('name-modal').classList.add('hidden');
                 setGreeting();
+            }
+        }
+
+        function openSettings() {
+            document.getElementById('settings-name-input').value = userName || "";
+            document.getElementById('settings-modal').classList.remove('hidden');
+            setTimeout(() => document.getElementById('settings-name-input').focus(), 100);
+            
+            // Auto-close mobile sidebar if open
+            if(window.innerWidth < 1024) { 
+                document.getElementById('mobile-sidebar').classList.add('-translate-x-full'); 
+                document.getElementById('mobile-overlay').classList.add('hidden');
+            }
+        }
+
+        function closeSettings() {
+            document.getElementById('settings-modal').classList.add('hidden');
+        }
+
+        function saveSettings() {
+            const input = document.getElementById('settings-name-input').value.trim();
+            if (input) {
+                userName = input.toUpperCase();
+                localStorage.setItem('beast-username', userName);
+                setGreeting();
+                closeSettings();
             }
         }
 
@@ -228,7 +287,7 @@
             document.getElementById('theme-icon-desktop').setAttribute('data-lucide', isDark ? 'sun' : 'moon'); 
             document.getElementById('theme-text-desktop').innerText = isDark ? 'Light Mode' : 'Dark Mode'; 
             
-            document.getElementById('theme-color-meta').setAttribute('content', isDark ? '#0e0e11' : '#f0f4f9'); 
+            document.getElementById('theme-color-meta').setAttribute('content', isDark ? '#000000' : '#ffffff'); 
             lucide.createIcons(); 
         }
         
@@ -248,13 +307,13 @@
             
             const btnChatPC = document.getElementById('btn-chat-pc');
             const btnImgPC = document.getElementById('btn-image-pc');
-            if (btnChatPC) btnChatPC.className = m === 'chat' ? 'text-xs font-bold uppercase tracking-widest text-black dark:text-white border-b-2 border-black dark:border-white pb-1 transition-colors' : 'text-xs font-bold uppercase tracking-widest text-zinc-500 hover:text-black dark:hover:text-white border-b-2 border-transparent pb-1 transition-colors';
-            if (btnImgPC) btnImgPC.className = m === 'image' ? 'text-xs font-bold uppercase tracking-widest text-black dark:text-white border-b-2 border-black dark:border-white pb-1 flex items-center gap-1.5 transition-colors' : 'text-xs font-bold uppercase tracking-widest text-zinc-500 hover:text-black dark:hover:text-white border-b-2 border-transparent pb-1 flex items-center gap-1.5 transition-colors';
+            if (btnChatPC) btnChatPC.className = m === 'chat' ? 'text-xs font-bold uppercase tracking-widest text-black dark:text-white border-b-2 border-black dark:border-white pb-1 transition-colors drop-shadow-sm' : 'text-xs font-bold uppercase tracking-widest text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white border-b-2 border-transparent pb-1 transition-colors drop-shadow-sm';
+            if (btnImgPC) btnImgPC.className = m === 'image' ? 'text-xs font-bold uppercase tracking-widest text-black dark:text-white border-b-2 border-black dark:border-white pb-1 flex items-center gap-1.5 transition-colors drop-shadow-sm' : 'text-xs font-bold uppercase tracking-widest text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white border-b-2 border-transparent pb-1 flex items-center gap-1.5 transition-colors drop-shadow-sm';
             
             const btnChatMob = document.getElementById('btn-chat-mobile');
             const btnImgMob = document.getElementById('btn-image-mobile');
-            if (btnChatMob) btnChatMob.className = m === 'chat' ? 'flex items-center gap-3 p-3 rounded-full bg-zinc-200 dark:bg-zinc-800 text-sm font-semibold text-black dark:text-white' : 'flex items-center gap-3 p-3 rounded-full text-sm font-semibold text-zinc-600 dark:text-zinc-300';
-            if (btnImgMob) btnImgMob.className = m === 'image' ? 'flex items-center gap-3 p-3 rounded-full bg-zinc-200 dark:bg-zinc-800 text-sm font-semibold text-black dark:text-white' : 'flex items-center gap-3 p-3 rounded-full text-sm font-semibold text-zinc-600 dark:text-zinc-300';
+            if (btnChatMob) btnChatMob.className = m === 'chat' ? 'flex items-center gap-3 p-3 rounded-full bg-zinc-200 dark:bg-zinc-800 text-sm font-semibold text-black dark:text-white' : 'flex items-center gap-3 p-3 rounded-full text-sm font-semibold text-zinc-600 dark:text-zinc-400';
+            if (btnImgMob) btnImgMob.className = m === 'image' ? 'flex items-center gap-3 p-3 rounded-full bg-zinc-200 dark:bg-zinc-800 text-sm font-semibold text-black dark:text-white' : 'flex items-center gap-3 p-3 rounded-full text-sm font-semibold text-zinc-600 dark:text-zinc-400';
         }
         
         if ('serviceWorker' in navigator) {
@@ -298,6 +357,7 @@
             setTimeout(() => { btn.innerHTML = `<i data-lucide="download" class="w-4 h-4"></i> Download`; lucide.createIcons(); }, 1000);
         }
 
+        // 🚀 RESTORED PIN BUTTONS IN HISTORY
         function loadHistory() {
             const keys = Object.keys(localStorage).filter(k => k.startsWith('BeastSession_')).sort().reverse();
             const mobileList = document.getElementById('history-list-mobile');
@@ -310,9 +370,14 @@
                 const isCurrent = id === currentSessionId;
                 
                 const html = `
-                <div onclick="loadSession('${id}')" class="flex items-center gap-4 p-2.5 rounded-full cursor-pointer hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors whitespace-nowrap overflow-hidden ${isCurrent ? 'bg-zinc-200 dark:bg-zinc-800' : ''}">
-                    <i data-lucide="message-square" class="w-4 h-4 flex-shrink-0 text-zinc-500"></i>
-                    <div class="font-medium text-sm truncate nav-text flex-1 text-black dark:text-white">${preview}</div>
+                <div class="group flex items-center justify-between p-2 rounded-full cursor-pointer hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors whitespace-nowrap overflow-hidden ${isCurrent ? 'bg-zinc-200 dark:bg-zinc-800' : ''}">
+                    <div class="flex items-center gap-3 flex-1 overflow-hidden" onclick="loadSession('${id}')">
+                        <i data-lucide="message-square" class="w-4 h-4 flex-shrink-0 text-zinc-500 pl-1"></i>
+                        <div class="font-medium text-sm truncate nav-text text-black dark:text-white">${preview}</div>
+                    </div>
+                    <button onclick="togglePin('${id}', event)" class="flex-shrink-0 text-zinc-400 hover:text-black dark:hover:text-white transition-opacity opacity-100 lg:opacity-0 lg:group-hover:opacity-100 pr-1 z-10">
+                        <i data-lucide="pin" class="w-3.5 h-3.5 ${session.pinned ? 'fill-current text-black dark:text-white lg:opacity-100' : ''}"></i>
+                    </button>
                 </div>`;
                 
                 mobileList.insertAdjacentHTML('beforeend', html);
@@ -321,8 +386,10 @@
             lucide.createIcons();
         }
 
-        function clearUnpinned() { if(!confirm("Clear all history?")) return; const keys = Object.keys(localStorage).filter(k => k.startsWith('BeastSession_')); keys.forEach(id => { localStorage.removeItem(id); }); startNewChat(); loadHistory(); }
+        function clearUnpinned() { if(!confirm("Clear all history?")) return; const keys = Object.keys(localStorage).filter(k => k.startsWith('BeastSession_')); keys.forEach(id => { const s = JSON.parse(localStorage.getItem(id)); if(!s.pinned) localStorage.removeItem(id); }); startNewChat(); loadHistory(); }
         
+        function togglePin(id, e) { e.stopPropagation(); const s = JSON.parse(localStorage.getItem(id)); s.pinned = !s.pinned; localStorage.setItem(id, JSON.stringify(s)); loadHistory(); }
+
         function loadSession(id) {
             currentSessionId = id; const session = JSON.parse(localStorage.getItem(id));
             document.getElementById('welcome-box').style.display = 'none';
@@ -386,7 +453,7 @@
             const beastHtml = `
                 <div id="beast-wrap-${msgId}" class="flex flex-col items-start w-full max-w-[90%]">
                     <div class="flex items-center gap-3 mb-2">
-                        <img src="/beast_ai.png" class="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover shadow-sm">
+                        <img src="/beast_ai.png" class="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover shadow-sm bg-black">
                         <span class="text-[13px] font-bold text-zinc-800 dark:text-zinc-200">Beast AI</span>
                     </div>
                     <div id="loader-${msgId}" class="pl-[2.7rem] sm:pl-[3.2rem]">
@@ -482,7 +549,7 @@
                 const html = `
                 <div class="flex flex-col items-start w-full max-w-[90%] mb-6">
                     <div class="flex items-center gap-3 mb-2">
-                        <img src="/beast_ai.png" class="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover shadow-sm">
+                        <img src="/beast_ai.png" class="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover shadow-sm bg-black">
                         <span class="text-[13px] font-bold text-zinc-800 dark:text-zinc-200">Beast AI</span>
                     </div>
                     <div class="pl-[2.7rem] sm:pl-[3.2rem] w-full">
@@ -524,7 +591,7 @@
         window.onload = () => { 
             if(localStorage.getItem('beast-theme') === 'dark') { toggleTheme(); }
             loadHistory(); 
-            initName(); // 🚀 Triggers the Name Initialization Check
+            initName(); 
         };
     </script>
 </body>
