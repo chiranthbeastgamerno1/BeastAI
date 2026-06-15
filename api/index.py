@@ -15,25 +15,25 @@ app = Flask(__name__)
 CORS(app) 
 
 # ==========================================
-# 🔑 ALL API KEYS (FULLY INTEGRATED)
+# 🔑 ALL API KEYS (PRESERVED & PROTECTED)
 # ==========================================
 api_keys = [
-    os.environ.get("GEMINI_API_KEY_1", "").strip() or None,
-    os.environ.get("GEMINI_API_KEY_2", "").strip() or None,
-    os.environ.get("GEMINI_API_KEY_3", "").strip() or None,
-    os.environ.get("GEMINI_API_KEY_4", "").strip() or None,
-    os.environ.get("GEMINI_API_KEY_5", "").strip() or None,
-    os.environ.get("GEMINI_API_KEY_6", "").strip() or None,
-    os.environ.get("GEMINI_API_KEY_7", "").strip() or None,
-    os.environ.get("GEMINI_API_KEY_8", "").strip() or None,
-    os.environ.get("GEMINI_API_KEY_9", "").strip() or None
+    os.environ.get("GEMINI_API_KEY_1"),
+    os.environ.get("GEMINI_API_KEY_2"),
+    os.environ.get("GEMINI_API_KEY_3"),
+    os.environ.get("GEMINI_API_KEY_4"),
+    os.environ.get("GEMINI_API_KEY_5"),
+    os.environ.get("GEMINI_API_KEY_6"),
+    os.environ.get("GEMINI_API_KEY_7"),
+    os.environ.get("GEMINI_API_KEY_8"),
+    os.environ.get("GEMINI_API_KEY_9")
 ]
-valid_keys = [key for key in api_keys if key]
+valid_keys = [key for key in api_keys if key and key.strip()]
 
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "").strip() or None
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "").strip() or None
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "").strip() or None
 
-# --- MODEL DEFINITIONS ---
+# --- MODELS DEFINED BY CREATOR ---
 GOOGLE_MODELS = ['gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-3.5-flash']
 OPENROUTER_MODELS = ['meta-llama/llama-3-8b-instruct:free', 'mistralai/mistral-7b-instruct:free'] 
 
@@ -42,18 +42,16 @@ OPENROUTER_MODELS = ['meta-llama/llama-3-8b-instruct:free', 'mistralai/mistral-7
 def home():
     return "Beast AI Core is Online (Precision Strike Edition)! 🦖✨"
 
-
 @app.route('/api/chat', methods=['POST'])
 def chat():
     try:
-        # Failsafe data extraction supporting both form-data and json payloads
-        message = request.form.get("message") or (request.json and request.json.get("message")) or ""
-        mode = request.form.get("mode") or (request.json and request.json.get("mode")) or "chat"
-        files = request.files.getlist("files") if hasattr(request, 'files') else []
-        history_json = request.form.get("history") or (request.json and request.json.get("history")) or "[]"
+        message = request.form.get("message", "")
+        mode = request.form.get("mode", "chat")
+        files = request.files.getlist("files")
+        history_json = request.form.get("history", "[]")
         
         try:
-            chat_history = json.loads(history_json) if isinstance(history_json, str) else history_json
+            chat_history = json.loads(history_json)
         except:
             chat_history = []
 
@@ -61,15 +59,14 @@ def chat():
             return jsonify({"reply": "The Beast hears only silence. 🤫"}), 200
 
         # ==========================================
-        # 🖼️ MANIFEST IMAGE MODE (STRICTLY ISOLATED)
+        # 🖼️ ENGINE 1: IMAGE MANIFESTATION (STRICT)
         # ==========================================
         if mode == 'image':
             image_url = None
             
             # --- ATTEMPT 1: OpenAI DALL-E 3 ---
-            if OPENAI_API_KEY:
+            if OPENAI_API_KEY and not image_url:
                 try:
-                    print("Attempting Primary Image Engine: OpenAI DALL-E 3...")
                     url = "https://api.openai.com/v1/images/generations"
                     headers = {
                         "Authorization": f"Bearer {OPENAI_API_KEY}",
@@ -86,15 +83,12 @@ def chat():
                     with urllib.request.urlopen(req, timeout=25) as response:
                         resp_data = json.loads(response.read().decode('utf-8'))
                         image_url = resp_data['data'][0]['url']
-                        print("OpenAI Image successfully generated!")
-                        return jsonify({"reply": image_url}), 200
-                except Exception as img_err:
-                    print(f"OpenAI Engine Failed/Limit Hit: {str(img_err)}")
+                except Exception as e:
+                    print(f"OpenAI Image Failed: {str(e)}")
 
-            # --- ATTEMPT 2: OpenRouter Fallback Engine ---
-            if not image_url and OPENROUTER_API_KEY:
+            # --- ATTEMPT 2: OpenRouter Fallback ---
+            if OPENROUTER_API_KEY and not image_url:
                 try:
-                    print("Attempting Fallback Image Engine: OpenRouter Flux...")
                     url = "https://openrouter.ai/api/v1/chat/completions"
                     headers = {
                         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
@@ -113,23 +107,23 @@ def chat():
                         resp_data = json.loads(response.read().decode('utf-8'))
                         content = resp_data['choices'][0]['message']['content']
                         
-                        # Use regular expressions to extract the clean image URL from response text
+                        # Fix for the "Failed to Load" error: Extracts clean URL, ignores markdown brackets
                         match = re.search(r'(https?://[^\s)"]+)', content)
                         if match:
                             image_url = match.group(0)
-                            print("OpenRouter Fallback Image successfully generated!")
-                            return jsonify({"reply": image_url}), 200
-                except Exception as or_img_err:
-                    print(f"OpenRouter Image Engine Failed: {str(or_img_err)}")
+                except Exception as e:
+                    print(f"OpenRouter Image Failed: {str(e)}")
 
-            # --- ATTEMPT 3: Zero-Downtime Backup Engine (Pollinations) ---
-            print("Bypassing to Final Failsafe Engine: Pollinations AI...")
-            seed = random.randint(1, 9999999)
-            safe_prompt = urllib.parse.quote(f"{message}, highly detailed, sharp focus")
-            return jsonify({"reply": f"https://image.pollinations.ai/prompt/{safe_prompt}?model=flux&nologo=true&seed={seed}"}), 200
+            # --- ATTEMPT 3: Zero-Downtime Backup (Pollinations) ---
+            if not image_url:
+                seed = random.randint(1, 9999999)
+                safe_prompt = urllib.parse.quote(f"{message}, highly detailed, sharp focus")
+                image_url = f"https://image.pollinations.ai/prompt/{safe_prompt}?model=flux&nologo=true&seed={seed}"
+
+            return jsonify({"reply": image_url}), 200
 
         # ==========================================
-        # 💬 TEXT GENERATION LOGIC (GEMINI ROTATION)
+        # 💬 ENGINE 2: TEXT GENERATION (GEMINI ROTATION)
         # ==========================================
         ist = timezone(timedelta(hours=5, minutes=30))
         live_time = datetime.now(ist).strftime("%A, %d %B %Y, %I:%M %p IST")
@@ -146,7 +140,7 @@ def chat():
         google_error_log = ""
         openrouter_error_log = ""
 
-        # --- ENGINE 1: GOOGLE GEMINI KEY ROTATION ---
+        # --- TEXT PRIMARY: GOOGLE GEMINI ---
         if valid_keys:
             client = genai.Client(api_key=random.choice(valid_keys))
             google_contents = []
@@ -182,7 +176,7 @@ def chat():
                     google_error_log += f"[{current_model} Error: {str(model_error)}] "
                     continue 
 
-        # --- ENGINE 2: OPENROUTER TEXT BACKUP ---
+        # --- TEXT BACKUP: OPENROUTER ---
         if not final_response_text and OPENROUTER_API_KEY:
             or_messages = [{"role": "system", "content": system_instruction}]
             for item in chat_history:
@@ -210,10 +204,11 @@ def chat():
                     }).encode('utf-8')
                     
                     req = urllib.request.Request(url, data=data, headers=headers)
-                    with urllib.request.urlopen(req, timeout=15) as response:
-                        response_data = json.loads(response.read().decode('utf-8'))
-                        final_response_text = response_data['choices'][0]['message']['content']
-                        break 
+                    response = urllib.request.urlopen(req, timeout=15) 
+                    response_data = json.loads(response.read().decode('utf-8'))
+                    
+                    final_response_text = response_data['choices'][0]['message']['content']
+                    break 
                 except urllib.error.HTTPError as he:
                     error_body = he.read().decode('utf-8')
                     openrouter_error_log += f"[{or_model} Error: {he.code} {error_body}] "
@@ -222,12 +217,12 @@ def chat():
                     openrouter_error_log += f"[{or_model} Error: {str(or_error)}] "
                     continue
 
-        # --- DIAGNOSTIC FAILURE CONTROL ---
+        # --- FINAL TEXT DIAGNOSTICS ---
         if not final_response_text:
              diagnostic_msg = (
-                 "**SYSTEM FAILURE** ⚡😵\nThe Beast could not connect to any text servers.\n\n"
-                 f"**Google Engine Error:** `{google_error_log.strip() or 'No Google keys found.'}`\n\n"
-                 f"**OpenRouter Engine Error:** `{openrouter_error_log.strip() or 'No OpenRouter key found.'}`"
+                 "**SYSTEM FAILURE** ⚡😵\nThe Beast could not connect to any servers.\n\n"
+                 f"**Google Engine Error:** `{google_error_log.strip()}`\n\n"
+                 f"**OpenRouter Engine Error:** `{openrouter_error_log.strip()}`"
              )
              return jsonify({"reply": diagnostic_msg}), 200
 
@@ -236,8 +231,8 @@ def chat():
     except Exception as e:
         if "safety" in str(e).lower():
              return jsonify({"reply": "The Beast cannot manifest that vision due to safety protocols! 🛡️✨"}), 200
+        
         return jsonify({"reply": f"**OUTER SYSTEM CRASH:** `{str(e)}`"}), 200
 
-
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    app.run(debug=True)
