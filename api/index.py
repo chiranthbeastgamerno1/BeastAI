@@ -16,7 +16,7 @@ app = Flask(__name__)
 CORS(app) 
 
 # ==========================================
-# 🔑 API KEYS (FULLY PRESERVED)
+# 🔑 API KEYS (FULLY PRESERVED & SECURED)
 # ==========================================
 api_keys = [
     os.environ.get("GEMINI_API_KEY_1"),
@@ -31,8 +31,8 @@ api_keys = [
 ]
 valid_keys = [key for key in api_keys if key and key.strip()]
 
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "").strip() or None
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "").strip() or None
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "").strip() or None
 
 # --- MODELS ---
 GOOGLE_MODELS = ['gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-3.5-flash']
@@ -41,13 +41,13 @@ OPENROUTER_MODELS = ['meta-llama/llama-3-8b-instruct:free', 'mistralai/mistral-7
 # 🚀 HELPER: Downloads image directly on the server to prevent frontend loading crashes!
 def get_base64_from_url(url):
     req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-    with urllib.request.urlopen(req, timeout=20) as response:
+    with urllib.request.urlopen(req, timeout=25) as response:
         img_bytes = response.read()
         return "data:image/jpeg;base64," + base64.b64encode(img_bytes).decode('utf-8')
 
 @app.route('/')
 def home():
-    return "Beast AI Core is Online (Indestructible Edition)! 🦖✨"
+    return "Beast AI Core is Online (Precision Strike Edition)! 🦖✨"
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
@@ -67,7 +67,6 @@ def chat():
 
         # ==========================================
         # 🖼️ ENGINE 1: IMAGE GENERATION (4-TIER FAILSAFE)
-        # All URLs are converted to Base64 to bypass browser blocks!
         # ==========================================
         if mode == 'image':
             img_b64 = None
@@ -86,24 +85,27 @@ def chat():
                 except Exception as e:
                     errors.append(f"OpenAI Failed: {e}")
 
-            # --- ATTEMPT 2: Gemini Imagen 4 (Your original code) ---
+            # --- ATTEMPT 2: Gemini Imagen 4 (🚀 SYNTAX BUG FIXED) ---
             if valid_keys and not img_b64:
                 try:
                     client = genai.Client(api_key=random.choice(valid_keys))
                     is_landscape = "landscape" in message.lower() or "widescreen" in message.lower()
                     aspect = "16:9" if is_landscape else "9:16"
+                    
                     result = client.models.generate_images(
                         model='imagen-4.0-generate-001', 
                         prompt=f"{message}, masterpiece, high quality, photorealistic, sharp focus",
                         config=types.GenerateImagesConfig(
-                            number_of_images=1, aspect_ratio=aspect, output_mime_type="image/jpeg",
-                            generation_config={'width': 1024, 'height': 1024}
+                            number_of_images=1, 
+                            aspect_ratio=aspect, 
+                            output_mime_type="image/jpeg"
+                            # Removed the invalid generation_config that was causing the Vercel crash!
                         )
                     )
-                    # Imagen natively returns bytes, convert straight to base64
+                    # Convert straight to base64
                     img_b64 = "data:image/jpeg;base64," + base64.b64encode(result.generated_images[0].image.image_bytes).decode('utf-8')
                 except Exception as e:
-                    errors.append(f"Imagen Failed: {e}")
+                    errors.append(f"Imagen 4 Failed: {e}")
 
             # --- ATTEMPT 3: OpenRouter ---
             if OPENROUTER_API_KEY and not img_b64:
@@ -130,7 +132,7 @@ def chat():
                 except Exception as e:
                     errors.append(f"Pollinations Failed: {e}")
 
-            # Return the solid Base64 string directly to the frontend
+            # Push the solid Base64 string directly to the frontend
             if img_b64:
                 return jsonify({"reply": img_b64}), 200
             else:
@@ -249,4 +251,4 @@ def chat():
         return jsonify({"reply": f"**OUTER SYSTEM CRASH:** `{str(e)}`"}), 200
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    app.run(debug=True)
