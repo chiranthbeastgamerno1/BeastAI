@@ -3,19 +3,20 @@ from flask_cors import CORS
 from google import genai
 from google.genai import types
 import os
-import re
 import urllib.parse
 import urllib.request
 import urllib.error
 import random
 import json
+import base64
+import re
 from datetime import datetime, timedelta, timezone
 
 app = Flask(__name__)
 CORS(app) 
 
 # ==========================================
-# 🔑 ALL API KEYS (PRESERVED & PROTECTED)
+# 🔑 API KEYS (FULLY PRESERVED)
 # ==========================================
 api_keys = [
     os.environ.get("GEMINI_API_KEY_1"),
@@ -30,24 +31,30 @@ api_keys = [
 ]
 valid_keys = [key for key in api_keys if key and key.strip()]
 
-OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "").strip() or None
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "").strip() or None
+OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "").strip() or None
 
-# --- MODELS DEFINED BY CREATOR ---
+# --- MODELS ---
 GOOGLE_MODELS = ['gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-3.5-flash']
 OPENROUTER_MODELS = ['meta-llama/llama-3-8b-instruct:free', 'mistralai/mistral-7b-instruct:free'] 
 
+# 🚀 HELPER: Downloads image directly on the server to prevent frontend loading crashes!
+def get_base64_from_url(url):
+    req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+    with urllib.request.urlopen(req, timeout=20) as response:
+        img_bytes = response.read()
+        return "data:image/jpeg;base64," + base64.b64encode(img_bytes).decode('utf-8')
 
 @app.route('/')
 def home():
-    return "Beast AI Core is Online (Precision Strike Edition)! 🦖✨"
+    return "Beast AI Core is Online (Indestructible Edition)! 🦖✨"
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
     try:
         message = request.form.get("message", "")
         mode = request.form.get("mode", "chat")
-        files = request.files.getlist("files")
+        files = request.files.getlist("files") if hasattr(request, 'files') else []
         history_json = request.form.get("history", "[]")
         
         try:
@@ -59,68 +66,76 @@ def chat():
             return jsonify({"reply": "The Beast hears only silence. 🤫"}), 200
 
         # ==========================================
-        # 🖼️ ENGINE 1: IMAGE MANIFESTATION (STRICT)
+        # 🖼️ ENGINE 1: IMAGE GENERATION (4-TIER FAILSAFE)
+        # All URLs are converted to Base64 to bypass browser blocks!
         # ==========================================
         if mode == 'image':
-            image_url = None
-            
+            img_b64 = None
+            errors = []
+
             # --- ATTEMPT 1: OpenAI DALL-E 3 ---
-            if OPENAI_API_KEY and not image_url:
+            if OPENAI_API_KEY and not img_b64:
                 try:
                     url = "https://api.openai.com/v1/images/generations"
-                    headers = {
-                        "Authorization": f"Bearer {OPENAI_API_KEY}",
-                        "Content-Type": "application/json"
-                    }
-                    payload = json.dumps({
-                        "model": "dall-e-3",
-                        "prompt": f"{message}, masterpiece, high quality, incredibly detailed, sharp focus",
-                        "n": 1,
-                        "size": "1024x1024"
-                    }).encode('utf-8')
-                    
+                    headers = {"Authorization": f"Bearer {OPENAI_API_KEY}", "Content-Type": "application/json"}
+                    payload = json.dumps({"model": "dall-e-3", "prompt": f"{message}, masterpiece, incredibly detailed", "n": 1, "size": "1024x1024"}).encode('utf-8')
                     req = urllib.request.Request(url, data=payload, headers=headers)
-                    with urllib.request.urlopen(req, timeout=25) as response:
-                        resp_data = json.loads(response.read().decode('utf-8'))
-                        image_url = resp_data['data'][0]['url']
+                    with urllib.request.urlopen(req, timeout=20) as response:
+                        raw_url = json.loads(response.read().decode('utf-8'))['data'][0]['url']
+                        img_b64 = get_base64_from_url(raw_url)
                 except Exception as e:
-                    print(f"OpenAI Image Failed: {str(e)}")
+                    errors.append(f"OpenAI Failed: {e}")
 
-            # --- ATTEMPT 2: OpenRouter Fallback ---
-            if OPENROUTER_API_KEY and not image_url:
+            # --- ATTEMPT 2: Gemini Imagen 4 (Your original code) ---
+            if valid_keys and not img_b64:
+                try:
+                    client = genai.Client(api_key=random.choice(valid_keys))
+                    is_landscape = "landscape" in message.lower() or "widescreen" in message.lower()
+                    aspect = "16:9" if is_landscape else "9:16"
+                    result = client.models.generate_images(
+                        model='imagen-4.0-generate-001', 
+                        prompt=f"{message}, masterpiece, high quality, photorealistic, sharp focus",
+                        config=types.GenerateImagesConfig(
+                            number_of_images=1, aspect_ratio=aspect, output_mime_type="image/jpeg",
+                            generation_config={'width': 1024, 'height': 1024}
+                        )
+                    )
+                    # Imagen natively returns bytes, convert straight to base64
+                    img_b64 = "data:image/jpeg;base64," + base64.b64encode(result.generated_images[0].image.image_bytes).decode('utf-8')
+                except Exception as e:
+                    errors.append(f"Imagen Failed: {e}")
+
+            # --- ATTEMPT 3: OpenRouter ---
+            if OPENROUTER_API_KEY and not img_b64:
                 try:
                     url = "https://openrouter.ai/api/v1/chat/completions"
-                    headers = {
-                        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-                        "Content-Type": "application/json",
-                        "HTTP-Referer": "https://beast-ai-sigma.vercel.app", 
-                        "X-Title": "Beast AI"
-                    }
-                    payload = json.dumps({
-                        "model": "black-forest-labs/flux-1.1-pro", 
-                        "messages": [{"role": "user", "content": message}],
-                        "modalities": ["image"]
-                    }).encode('utf-8')
-                    
+                    headers = {"Authorization": f"Bearer {OPENROUTER_API_KEY}", "Content-Type": "application/json", "HTTP-Referer": "https://beast-ai-sigma.vercel.app", "X-Title": "Beast AI"}
+                    payload = json.dumps({"model": "black-forest-labs/flux-1.1-pro", "messages": [{"role": "user", "content": message}], "modalities": ["image"]}).encode('utf-8')
                     req = urllib.request.Request(url, data=payload, headers=headers)
                     with urllib.request.urlopen(req, timeout=25) as response:
-                        resp_data = json.loads(response.read().decode('utf-8'))
-                        content = resp_data['choices'][0]['message']['content']
-                        
-                        # Fix for the "Failed to Load" error: Extracts clean URL, ignores markdown brackets
+                        content = json.loads(response.read().decode('utf-8'))['choices'][0]['message']['content']
                         match = re.search(r'(https?://[^\s)"]+)', content)
-                        if match:
-                            image_url = match.group(0)
+                        if match: 
+                            img_b64 = get_base64_from_url(match.group(0))
                 except Exception as e:
-                    print(f"OpenRouter Image Failed: {str(e)}")
+                    errors.append(f"OpenRouter Failed: {e}")
 
-            # --- ATTEMPT 3: Zero-Downtime Backup (Pollinations) ---
-            if not image_url:
-                seed = random.randint(1, 9999999)
-                safe_prompt = urllib.parse.quote(f"{message}, highly detailed, sharp focus")
-                image_url = f"https://image.pollinations.ai/prompt/{safe_prompt}?model=flux&nologo=true&seed={seed}"
+            # --- ATTEMPT 4: Pollinations Failsafe ---
+            if not img_b64:
+                try:
+                    seed = random.randint(1, 9999999)
+                    safe_prompt = urllib.parse.quote(f"{message}, highly detailed, sharp focus")
+                    poll_url = f"https://image.pollinations.ai/prompt/{safe_prompt}?model=flux&nologo=true&seed={seed}"
+                    img_b64 = get_base64_from_url(poll_url)
+                except Exception as e:
+                    errors.append(f"Pollinations Failed: {e}")
 
-            return jsonify({"reply": image_url}), 200
+            # Return the solid Base64 string directly to the frontend
+            if img_b64:
+                return jsonify({"reply": img_b64}), 200
+            else:
+                return jsonify({"reply": f"**IMAGE GENERATION FAILED** 😵\n\nLogs: { ' | '.join(errors) }"}), 200
+
 
         # ==========================================
         # 💬 ENGINE 2: TEXT GENERATION (GEMINI ROTATION)
@@ -204,11 +219,10 @@ def chat():
                     }).encode('utf-8')
                     
                     req = urllib.request.Request(url, data=data, headers=headers)
-                    response = urllib.request.urlopen(req, timeout=15) 
-                    response_data = json.loads(response.read().decode('utf-8'))
-                    
-                    final_response_text = response_data['choices'][0]['message']['content']
-                    break 
+                    with urllib.request.urlopen(req, timeout=15) as response:
+                        response_data = json.loads(response.read().decode('utf-8'))
+                        final_response_text = response_data['choices'][0]['message']['content']
+                        break 
                 except urllib.error.HTTPError as he:
                     error_body = he.read().decode('utf-8')
                     openrouter_error_log += f"[{or_model} Error: {he.code} {error_body}] "
@@ -235,4 +249,4 @@ def chat():
         return jsonify({"reply": f"**OUTER SYSTEM CRASH:** `{str(e)}`"}), 200
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, port=5000)
