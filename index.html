@@ -21,10 +21,12 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@900&display=swap');
+        /* 🚀 THE METROPOLIS FONT UPGRADE */
+        @import url('https://cdn.jsdelivr.net/npm/typeface-metropolis@1.1.13/index.min.css');
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@900&display=swap');
         
         body { 
-            font-family: 'Inter', sans-serif; 
+            font-family: 'Metropolis', sans-serif; 
             overflow: hidden; 
             -webkit-font-smoothing: antialiased; 
             margin: 0;
@@ -111,6 +113,7 @@
 </head>
 <body class="flex h-[100dvh] w-full text-base">
 
+    <!-- 🚀 NAME INITIALIZATION MODAL -->
     <div id="name-modal" class="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center hidden backdrop-blur-md px-4 transition-opacity">
         <div class="bg-white dark:bg-[#1e1e20] p-6 sm:p-8 rounded-3xl shadow-2xl max-w-sm w-full border border-zinc-200 dark:border-zinc-800">
             <div class="flex justify-center mb-4"><img src="/beast_ai.png" class="w-16 h-16 rounded-full shadow-md object-cover bg-black"></div>
@@ -121,6 +124,7 @@
         </div>
     </div>
 
+    <!-- 🚀 SETTINGS MODAL -->
     <div id="settings-modal" class="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center hidden backdrop-blur-md px-4 transition-opacity">
         <div class="bg-white dark:bg-[#1e1e20] p-6 sm:p-8 rounded-3xl shadow-2xl max-w-sm w-full border border-zinc-200 dark:border-zinc-800 relative">
             <button onclick="closeSettings()" class="absolute top-4 right-4 text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
@@ -138,8 +142,10 @@
         </div>
     </div>
 
+    <!-- 🚀 MOBILE OVERLAY -->
     <div id="mobile-overlay" onclick="toggleMobileSidebar()" class="fixed inset-0 bg-black/40 z-40 hidden lg:hidden backdrop-blur-sm transition-opacity pt-safe"></div>
 
+    <!-- 🚀 ANDROID/MOBILE SIDEBAR -->
     <aside id="mobile-sidebar" class="fixed inset-y-0 left-0 w-72 bg-white/95 dark:bg-[#1e1e20]/95 backdrop-blur-xl z-50 transform -translate-x-full transition-transform duration-300 flex flex-col pt-safe lg:hidden border-r border-black/5 dark:border-white/5">
         <div class="flex items-center justify-between p-4">
             <button onclick="toggleMobileSidebar()" class="p-2 text-zinc-800 dark:text-zinc-200 rounded-full hover:bg-black/5 dark:hover:bg-white/10"><i data-lucide="menu"></i></button>
@@ -163,6 +169,7 @@
         </div>
     </aside>
 
+    <!-- 🚀 PC/DESKTOP SIDEBAR -->
     <aside id="desktop-sidebar" class="desktop-sidebar hidden lg:flex flex-col bg-white/80 dark:bg-[#1e1e20]/80 backdrop-blur-2xl border-r border-black/5 dark:border-white/5 z-40 h-full fixed left-0 top-0 py-4 group">
         <div class="px-3 mb-8 flex items-center">
             <button onclick="toggleDesktopSidebar()" class="p-2.5 rounded-full hover:bg-black/5 dark:hover:bg-white/10 flex-shrink-0 text-zinc-800 dark:text-zinc-200 transition-colors"><i data-lucide="menu"></i></button>
@@ -194,6 +201,7 @@
         </div>
     </aside>
 
+    <!-- 🚀 MAIN CONTENT AREA -->
     <div id="main-content" class="main-content-shift flex-1 flex flex-col min-w-0 relative bg-transparent pt-safe">
         
         <header class="flex items-center px-4 py-3 lg:hidden relative z-10 bg-transparent">
@@ -212,6 +220,7 @@
         </main>
     </div>
 
+    <!-- 🚀 FLOATING INPUT PILL -->
     <div id="pill-wrapper" class="pill-wrapper fixed bottom-0 left-0 right-0 z-30 pb-safe pointer-events-none">
         <div class="max-w-3xl mx-auto px-4 pb-2 pt-6 pointer-events-auto">
             
@@ -222,6 +231,7 @@
             
             <div id="attachment-preview" class="hidden relative ml-4 mb-3 flex gap-2 overflow-x-auto custom-scrollbar max-w-full"></div>
             
+            <!-- The Pill Container -->
             <div class="relative flex items-end w-full bg-white dark:bg-[#1e1e20] rounded-[2rem] sm:rounded-[2.5rem] shadow-[0_4px_20px_rgb(0,0,0,0.08)] dark:shadow-[0_4px_20px_rgb(0,0,0,0.4)] px-1 sm:px-2 py-1 border border-zinc-200 dark:border-zinc-700">
                 <button onclick="document.getElementById('file-input').click()" class="p-3 sm:p-3.5 text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors rounded-full mb-1.5"><i data-lucide="paperclip" class="w-5 h-5"></i></button>
                 <input type="file" id="file-input" class="hidden" accept="image/*,application/pdf" multiple onchange="handleFile(this)">
@@ -535,7 +545,6 @@
             for (let i = 0; i < attachedFiles.length; i++) { formData.append('files', await compressImage(attachedFiles[i].file)); }
             clearAllAttachments();
 
-            // 🚀 THE BUG FIX: HIDING THE LOADER PROPERLY
             try {
                 const res = await fetch('/api/chat', { method: 'POST', body: formData });
                 const data = await res.json();
@@ -547,10 +556,7 @@
                 let replyText = data.reply || "Connection severed.";
                 
                 if (currentMode === 'image' && (replyText.startsWith('http') || replyText.startsWith('data:'))) {
-                    // Start downloading the image
                     const img = new Image();
-                    
-                    // ONLY hide the loader when the image finishes downloading successfully
                     img.onload = () => {
                         loader.style.display = 'none';
                         targetBoxWrap.classList.remove('hidden');
@@ -564,22 +570,16 @@
                         </div>`;
                         lucide.createIcons(); document.getElementById('scroll-container').scrollTop = document.getElementById('scroll-container').scrollHeight;
                     };
-                    
-                    // Or hide it if the image link is broken
                     img.onerror = () => {
                         loader.style.display = 'none';
                         targetBoxWrap.classList.remove('hidden');
                         targetBox.innerHTML = marked.parse("Failed to load the manifested image! 😵");
                     };
-                    
-                    // Trigger the download
                     img.src = replyText; 
                     
                 } else {
-                    // For standard text chats, hide immediately as before
                     loader.style.display = 'none';
                     targetBoxWrap.classList.remove('hidden');
-                    
                     targetBox.innerHTML = marked.parse(replyText);
                     targetBox.querySelectorAll('pre').forEach(pre => pre.classList.add('bg-[#1e1e20]', 'text-zinc-100', 'p-4', 'rounded-xl', 'overflow-x-auto', 'my-4', 'border', 'border-zinc-800'));
                 }
