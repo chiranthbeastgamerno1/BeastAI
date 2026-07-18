@@ -21,13 +21,12 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     
     <style>
-        /* 🚀 THE TRUE METROPOLIS FONT UPGRADE */
         @import url('https://fonts.cdnfonts.com/css/metropolis-2');
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@900&display=swap');
         
         body { 
             font-family: 'Metropolis', sans-serif; 
-            font-weight: 500; /* 🚀 FORCES THE BASELINE TO BE THICKER (MEDIUM WEIGHT) */
+            font-weight: 500;
             overflow: hidden; 
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale; 
@@ -36,7 +35,6 @@
         }
         .font-beast-logo { font-family: 'Playfair Display', serif; }
 
-        /* 🚀 VIBRANT RGB AURORA BACKGROUND */
         @keyframes aurora {
             0% { background-position: 0% 50%; }
             50% { background-position: 100% 50%; }
@@ -53,18 +51,15 @@
             animation: aurora 15s ease infinite;
         }
 
-        /* Safe area handling */
         .pb-safe { padding-bottom: calc(env(safe-area-inset-bottom) + 24px); }
         .pt-safe { padding-top: env(safe-area-inset-top); }
 
-        /* Scrollbars */
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background-color: rgba(0,0,0,0.2); border-radius: 4px; }
         body.dark .custom-scrollbar::-webkit-scrollbar-thumb { background-color: rgba(255,255,255,0.2); }
         .sidebar-scroll::-webkit-scrollbar { display: none; }
         .sidebar-scroll { -ms-overflow-style: none; scrollbar-width: none; overflow-x: hidden; }
 
-        /* 🚀 THE 3 JUMPING DOTS LOADER */
         .jumping-dots span {
             display: inline-block;
             width: 8px; height: 8px;
@@ -80,7 +75,6 @@
             40% { transform: scale(1); opacity: 1; }
         }
 
-        /* 🚀 TRANSLUCENT IMAGE GENERATION GRID LOADER */
         .image-gen-grid {
             background-image: radial-gradient(circle, #a1a1aa 1.5px, transparent 1.5px);
             background-size: 16px 16px;
@@ -94,23 +88,55 @@
             100% { background-position: 16px 16px; }
         }
 
-        /* 🚀 THICKER TYPOGRAPHY OVERRIDES */
         .prose, .prose p, .prose li, .prose span, .prose a { font-weight: 500 !important; }
         .prose strong, .prose b { font-weight: 800 !important; color: inherit; }
         .prose p { margin-top: 0.4em; margin-bottom: 0.4em; }
         .prose ul > li::marker { color: #6b7280; font-size: 1.2em; }
         body.dark .prose ul > li::marker { color: #a1a1aa !important; }
 
-        /* Lockable Sidebar Logic */
-        .desktop-sidebar { width: 4rem; overflow-x: hidden; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        /* 🚀 THE UI FIX: FLAWLESS CIRCULAR SIDEBAR GEOMETRY */
+        .desktop-sidebar { 
+            width: 68px; /* Perfectly bounds 44px buttons with 12px padding */
+            overflow-x: hidden; 
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+        }
         .desktop-sidebar:hover:not(.locked) { width: 16rem; }
         .desktop-sidebar.locked { width: 16rem; }
+        
+        .sidebar-btn {
+            display: flex;
+            align-items: center;
+            height: 44px;
+            width: 100%;
+            border-radius: 9999px;
+            overflow: hidden;
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s;
+            cursor: pointer;
+        }
+        .desktop-sidebar .sidebar-btn {
+            width: 44px; /* Forces a perfect circle when collapsed */
+        }
+        .desktop-sidebar:hover:not(.locked) .sidebar-btn,
+        .desktop-sidebar.locked .sidebar-btn {
+            width: 100%; /* Seamlessly expands */
+        }
+        
+        .sidebar-icon {
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
         .desktop-sidebar .nav-text { opacity: 0; transition: opacity 0.2s ease; white-space: nowrap; }
         .desktop-sidebar:hover:not(.locked) .nav-text, 
         .desktop-sidebar.locked .nav-text { opacity: 1; transition-delay: 0.1s; }
+        
         .main-content-shift, .pill-wrapper { margin-left: 0; transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         @media (min-width: 1024px) {
-            .main-content-shift, .pill-wrapper { margin-left: 4rem; }
+            .main-content-shift, .pill-wrapper { margin-left: 68px; }
             .main-content-shift.locked, .pill-wrapper.locked { margin-left: 16rem; }
         }
     </style>
@@ -152,8 +178,8 @@
     <!-- 🚀 ANDROID/MOBILE SIDEBAR -->
     <aside id="mobile-sidebar" class="fixed inset-y-0 left-0 w-72 bg-white/95 dark:bg-[#1e1e20]/95 backdrop-blur-xl z-50 transform -translate-x-full transition-transform duration-300 flex flex-col pt-safe lg:hidden border-r border-black/5 dark:border-white/5">
         <div class="flex items-center justify-between p-4">
-            <button onclick="toggleMobileSidebar()" class="p-2 text-zinc-800 dark:text-zinc-200 rounded-full hover:bg-black/5 dark:hover:bg-white/10"><i data-lucide="menu"></i></button>
-            <button onclick="startNewChat()" class="p-2 text-zinc-800 dark:text-zinc-200 rounded-full hover:bg-black/5 dark:hover:bg-white/10"><i data-lucide="edit"></i></button>
+            <button onclick="toggleMobileSidebar()" class="w-[44px] h-[44px] flex items-center justify-center text-zinc-800 dark:text-zinc-200 rounded-full hover:bg-black/5 dark:hover:bg-white/10"><i data-lucide="menu"></i></button>
+            <button onclick="startNewChat()" class="w-[44px] h-[44px] flex items-center justify-center text-zinc-800 dark:text-zinc-200 rounded-full hover:bg-black/5 dark:hover:bg-white/10"><i data-lucide="edit"></i></button>
         </div>
         
         <div class="flex flex-col gap-1 px-3 mt-2 mb-4 border-b border-black/5 dark:border-white/5 pb-4">
@@ -166,7 +192,7 @@
             <nav id="history-list-mobile" class="space-y-1 font-medium"></nav>
         </div>
         
-        <div class="p-3 border-t border-black/5 dark:border-white/5">
+        <div class="p-3 border-t border-black/5 dark:border-white/5 flex flex-col gap-1">
             <button onclick="openSettings()" class="flex items-center gap-3 p-3 w-full rounded-full text-sm font-semibold hover:bg-black/5 dark:hover:bg-white/10 transition text-zinc-800 dark:text-zinc-200"><i data-lucide="settings"></i> <span>Settings</span></button>
             <button onclick="toggleTheme()" class="flex items-center gap-3 p-3 w-full rounded-full text-sm font-semibold hover:bg-black/5 dark:hover:bg-white/10 transition text-zinc-800 dark:text-zinc-200"><i data-lucide="moon" id="theme-icon-mobile"></i> <span id="theme-text-mobile">Dark Mode</span></button>
             <button onclick="clearUnpinned()" class="flex items-center gap-3 p-3 w-full rounded-full text-sm font-semibold text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 mt-1 transition"><i data-lucide="trash-2"></i> Clear History</button>
@@ -176,12 +202,13 @@
     <!-- 🚀 PC/DESKTOP SIDEBAR -->
     <aside id="desktop-sidebar" class="desktop-sidebar hidden lg:flex flex-col bg-white/80 dark:bg-[#1e1e20]/80 backdrop-blur-2xl border-r border-black/5 dark:border-white/5 z-40 h-full fixed left-0 top-0 py-4 group">
         <div class="px-3 mb-8 flex items-center">
-            <button onclick="toggleDesktopSidebar()" class="p-2.5 rounded-full hover:bg-black/5 dark:hover:bg-white/10 flex-shrink-0 text-zinc-800 dark:text-zinc-200 transition-colors"><i data-lucide="menu"></i></button>
+            <!-- 🚀 FLAWLESS 44x44 CENTERED MENU ICON -->
+            <button onclick="toggleDesktopSidebar()" class="w-[44px] h-[44px] rounded-full hover:bg-black/5 dark:hover:bg-white/10 flex items-center justify-center flex-shrink-0 text-zinc-800 dark:text-zinc-200 transition-colors"><i data-lucide="menu"></i></button>
         </div>
         <div class="px-3 mb-6 flex flex-col gap-2">
-            <button onclick="startNewChat()" class="flex items-center gap-4 p-2.5 rounded-full bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 transition-colors text-zinc-900 dark:text-white">
-                <i data-lucide="plus" class="flex-shrink-0"></i> 
-                <span class="nav-text text-sm font-bold">New chat</span>
+            <button onclick="startNewChat()" class="sidebar-btn bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 transition-colors text-zinc-900 dark:text-white">
+                <div class="sidebar-icon"><i data-lucide="plus"></i></div>
+                <span class="nav-text text-sm font-bold ml-1">New chat</span>
             </button>
         </div>
         <div class="flex-1 overflow-y-auto px-3 sidebar-scroll">
@@ -190,17 +217,17 @@
         </div>
         
         <div class="px-3 mt-4 pt-4 border-t border-black/5 dark:border-white/5 flex flex-col gap-2">
-            <button onclick="clearUnpinned()" class="flex items-center gap-4 p-2.5 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-red-600">
-                <i data-lucide="trash-2" class="flex-shrink-0"></i>
-                <span class="nav-text text-sm font-semibold">Clear All</span>
+            <button onclick="clearUnpinned()" class="sidebar-btn hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-red-600">
+                <div class="sidebar-icon"><i data-lucide="trash-2"></i></div>
+                <span class="nav-text text-sm font-semibold ml-1">Clear All</span>
             </button>
-            <button onclick="openSettings()" class="flex items-center gap-4 p-2.5 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-zinc-800 dark:text-zinc-200">
-                <i data-lucide="settings" class="flex-shrink-0"></i>
-                <span class="nav-text text-sm font-semibold">Settings</span>
+            <button onclick="openSettings()" class="sidebar-btn hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-zinc-800 dark:text-zinc-200">
+                <div class="sidebar-icon"><i data-lucide="settings"></i></div>
+                <span class="nav-text text-sm font-semibold ml-1">Settings</span>
             </button>
-            <button onclick="toggleTheme()" class="flex items-center gap-4 p-2.5 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-zinc-800 dark:text-zinc-200">
-                <i data-lucide="moon" id="theme-icon-desktop" class="flex-shrink-0"></i>
-                <span class="nav-text text-sm font-semibold" id="theme-text-desktop">Dark Mode</span>
+            <button onclick="toggleTheme()" class="sidebar-btn hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-zinc-800 dark:text-zinc-200">
+                <div class="sidebar-icon"><i data-lucide="moon" id="theme-icon-desktop"></i></div>
+                <span class="nav-text text-sm font-semibold ml-1" id="theme-text-desktop">Dark Mode</span>
             </button>
         </div>
     </aside>
@@ -209,7 +236,7 @@
     <div id="main-content" class="main-content-shift flex-1 flex flex-col min-w-0 relative bg-transparent pt-safe">
         
         <header class="flex items-center px-4 py-3 lg:hidden relative z-10 bg-transparent">
-            <button onclick="toggleMobileSidebar()" class="p-2 text-zinc-900 dark:text-white rounded-full"><i data-lucide="menu"></i></button>
+            <button onclick="toggleMobileSidebar()" class="w-[44px] h-[44px] flex items-center justify-center text-zinc-900 dark:text-white rounded-full"><i data-lucide="menu"></i></button>
             <h1 class="ml-2 text-lg font-black tracking-widest uppercase text-zinc-900 dark:text-white font-beast-logo">Beast</h1>
         </header>
 
@@ -412,16 +439,16 @@
                 const isCurrent = id === currentSessionId;
                 
                 const html = `
-                <div class="group flex items-center justify-between p-2 rounded-full cursor-pointer hover:bg-black/5 dark:hover:bg-white/10 transition-colors whitespace-nowrap overflow-hidden ${isCurrent ? 'bg-black/5 dark:bg-white/10' : ''}">
-                    <div class="flex items-center gap-3 flex-1 overflow-hidden" onclick="loadSession('${id}')">
-                        <i data-lucide="message-square" class="w-4 h-4 flex-shrink-0 text-zinc-500 pl-1"></i>
-                        <div class="text-sm truncate nav-text text-zinc-900 dark:text-white font-semibold">${preview}</div>
+                <div class="sidebar-btn group p-0 hover:bg-black/5 dark:hover:bg-white/10 transition-colors whitespace-nowrap overflow-hidden ${isCurrent ? 'bg-black/5 dark:bg-white/10' : ''}">
+                    <div class="flex items-center flex-1 overflow-hidden h-full w-full" onclick="loadSession('${id}')">
+                        <div class="sidebar-icon text-zinc-500 flex-shrink-0"><i data-lucide="message-square" class="w-4 h-4"></i></div>
+                        <div class="text-sm truncate nav-text text-zinc-900 dark:text-white font-semibold flex-1 text-left ml-1">${preview}</div>
                     </div>
-                    <div class="flex items-center flex-shrink-0 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity pr-1 z-10 gap-0.5">
-                        <button onclick="renameSession('${id}', event)" class="p-1 text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors">
+                    <div class="flex items-center flex-shrink-0 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity pr-3 z-10 gap-1 nav-text">
+                        <button onclick="renameSession('${id}', event)" class="p-1.5 text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors rounded-full hover:bg-black/5 dark:hover:bg-white/10">
                             <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
                         </button>
-                        <button onclick="togglePin('${id}', event)" class="p-1 text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors">
+                        <button onclick="togglePin('${id}', event)" class="p-1.5 text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors rounded-full hover:bg-black/5 dark:hover:bg-white/10">
                             <i data-lucide="pin" class="w-3.5 h-3.5 ${session.pinned ? 'fill-current text-zinc-900 dark:text-white lg:opacity-100' : ''}"></i>
                         </button>
                     </div>
