@@ -94,9 +94,8 @@
         .prose ul > li::marker { color: #6b7280; font-size: 1.2em; }
         body.dark .prose ul > li::marker { color: #a1a1aa !important; }
 
-        /* 🚀 THE UI FIX: FLAWLESS CIRCULAR SIDEBAR GEOMETRY */
         .desktop-sidebar { 
-            width: 68px; /* Perfectly bounds 44px buttons with 12px padding */
+            width: 68px;
             overflow-x: hidden; 
             transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
         }
@@ -114,11 +113,11 @@
             cursor: pointer;
         }
         .desktop-sidebar .sidebar-btn {
-            width: 44px; /* Forces a perfect circle when collapsed */
+            width: 44px; 
         }
         .desktop-sidebar:hover:not(.locked) .sidebar-btn,
         .desktop-sidebar.locked .sidebar-btn {
-            width: 100%; /* Seamlessly expands */
+            width: 100%; 
         }
         
         .sidebar-icon {
@@ -143,7 +142,6 @@
 </head>
 <body class="flex h-[100dvh] w-full text-base">
 
-    <!-- 🚀 NAME INITIALIZATION MODAL -->
     <div id="name-modal" class="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center hidden backdrop-blur-md px-4 transition-opacity">
         <div class="bg-white dark:bg-[#1e1e20] p-6 sm:p-8 rounded-3xl shadow-2xl max-w-sm w-full border border-zinc-200 dark:border-zinc-800">
             <div class="flex justify-center mb-4"><img src="/beast_ai.png" class="w-16 h-16 rounded-full shadow-md object-cover bg-black"></div>
@@ -154,7 +152,6 @@
         </div>
     </div>
 
-    <!-- 🚀 SETTINGS MODAL -->
     <div id="settings-modal" class="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center hidden backdrop-blur-md px-4 transition-opacity">
         <div class="bg-white dark:bg-[#1e1e20] p-6 sm:p-8 rounded-3xl shadow-2xl max-w-sm w-full border border-zinc-200 dark:border-zinc-800 relative">
             <button onclick="closeSettings()" class="absolute top-4 right-4 text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
@@ -172,10 +169,8 @@
         </div>
     </div>
 
-    <!-- 🚀 MOBILE OVERLAY -->
     <div id="mobile-overlay" onclick="toggleMobileSidebar()" class="fixed inset-0 bg-black/40 z-40 hidden lg:hidden backdrop-blur-sm transition-opacity pt-safe"></div>
 
-    <!-- 🚀 ANDROID/MOBILE SIDEBAR -->
     <aside id="mobile-sidebar" class="fixed inset-y-0 left-0 w-72 bg-white/95 dark:bg-[#1e1e20]/95 backdrop-blur-xl z-50 transform -translate-x-full transition-transform duration-300 flex flex-col pt-safe lg:hidden border-r border-black/5 dark:border-white/5">
         <div class="flex items-center justify-between p-4">
             <button onclick="toggleMobileSidebar()" class="w-[44px] h-[44px] flex items-center justify-center text-zinc-800 dark:text-zinc-200 rounded-full hover:bg-black/5 dark:hover:bg-white/10"><i data-lucide="menu"></i></button>
@@ -199,10 +194,8 @@
         </div>
     </aside>
 
-    <!-- 🚀 PC/DESKTOP SIDEBAR -->
     <aside id="desktop-sidebar" class="desktop-sidebar hidden lg:flex flex-col bg-white/80 dark:bg-[#1e1e20]/80 backdrop-blur-2xl border-r border-black/5 dark:border-white/5 z-40 h-full fixed left-0 top-0 py-4 group">
         <div class="px-3 mb-8 flex items-center">
-            <!-- 🚀 FLAWLESS 44x44 CENTERED MENU ICON -->
             <button onclick="toggleDesktopSidebar()" class="w-[44px] h-[44px] rounded-full hover:bg-black/5 dark:hover:bg-white/10 flex items-center justify-center flex-shrink-0 text-zinc-800 dark:text-zinc-200 transition-colors"><i data-lucide="menu"></i></button>
         </div>
         <div class="px-3 mb-6 flex flex-col gap-2">
@@ -232,7 +225,6 @@
         </div>
     </aside>
 
-    <!-- 🚀 MAIN CONTENT AREA -->
     <div id="main-content" class="main-content-shift flex-1 flex flex-col min-w-0 relative bg-transparent pt-safe">
         
         <header class="flex items-center px-4 py-3 lg:hidden relative z-10 bg-transparent">
@@ -251,18 +243,16 @@
         </main>
     </div>
 
-    <!-- 🚀 FLOATING INPUT PILL -->
     <div id="pill-wrapper" class="pill-wrapper fixed bottom-0 left-0 right-0 z-30 pb-safe pointer-events-none">
         <div class="max-w-3xl mx-auto px-4 pb-2 pt-6 pointer-events-auto">
             
-            <div class="hidden lg:flex items-center gap-6 mb-3 ml-4">
-                <button onclick="setMode('chat')" id="btn-chat-pc" class="text-xs font-bold uppercase tracking-widest text-zinc-900 dark:text-white border-b-2 border-zinc-900 dark:border-white pb-1 transition-colors drop-shadow-sm">Converse</button>
-                <button onclick="setMode('image')" id="btn-image-pc" class="text-xs font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white border-b-2 border-transparent pb-1 flex items-center gap-1.5 transition-colors drop-shadow-sm"><i data-lucide="image" class="w-3.5 h-3.5"></i> Manifest Image</button>
+            <div class="hidden lg:inline-flex items-center gap-6 mb-3 ml-4 px-5 py-2.5 bg-white/70 dark:bg-[#1e1e20]/70 backdrop-blur-xl border border-black/5 dark:border-white/10 rounded-2xl shadow-sm">
+                <button onclick="setMode('chat')" id="btn-chat-pc" class="text-xs font-bold uppercase tracking-widest text-zinc-900 dark:text-white border-b-2 border-zinc-900 dark:border-white pb-0.5 transition-colors drop-shadow-sm">Converse</button>
+                <button onclick="setMode('image')" id="btn-image-pc" class="text-xs font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white border-b-2 border-transparent pb-0.5 flex items-center gap-1.5 transition-colors drop-shadow-sm"><i data-lucide="image" class="w-3.5 h-3.5"></i> Manifest Image</button>
             </div>
             
             <div id="attachment-preview" class="hidden relative ml-4 mb-3 flex gap-2 overflow-x-auto custom-scrollbar max-w-full"></div>
             
-            <!-- The Pill Container -->
             <div class="relative flex items-end w-full bg-white dark:bg-[#1e1e20] rounded-[2rem] sm:rounded-[2.5rem] shadow-[0_4px_20px_rgb(0,0,0,0.08)] dark:shadow-[0_4px_20px_rgb(0,0,0,0.4)] px-1 sm:px-2 py-1 border border-zinc-200 dark:border-zinc-700">
                 <button onclick="document.getElementById('file-input').click()" class="p-3 sm:p-3.5 text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors rounded-full mb-1.5"><i data-lucide="paperclip" class="w-5 h-5"></i></button>
                 <input type="file" id="file-input" class="hidden" accept="image/*,application/pdf" multiple onchange="handleFile(this)">
@@ -283,7 +273,6 @@
         let userName = localStorage.getItem('beast-username');
         let isDesktopSidebarLocked = localStorage.getItem('beast-sidebar-locked') === 'true';
 
-        // 🚀 NAME LOGIC
         function initName() {
             if (!userName) {
                 document.getElementById('name-modal').classList.remove('hidden');
@@ -329,7 +318,6 @@
             document.getElementById('greeting-text').innerText = greetings[Math.floor(Math.random() * greetings.length)];
         }
 
-        // 🚀 LOCKABLE SIDEBAR LOGIC
         function initDesktopSidebar() {
             const sb = document.getElementById('desktop-sidebar');
             const main = document.getElementById('main-content');
@@ -377,8 +365,8 @@
             
             const btnChatPC = document.getElementById('btn-chat-pc');
             const btnImgPC = document.getElementById('btn-image-pc');
-            if (btnChatPC) btnChatPC.className = m === 'chat' ? 'text-xs font-bold uppercase tracking-widest text-zinc-900 dark:text-white border-b-2 border-zinc-900 dark:border-white pb-1 transition-colors drop-shadow-sm' : 'text-xs font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white border-b-2 border-transparent pb-1 transition-colors drop-shadow-sm';
-            if (btnImgPC) btnImgPC.className = m === 'image' ? 'text-xs font-bold uppercase tracking-widest text-zinc-900 dark:text-white border-b-2 border-zinc-900 dark:border-white pb-1 flex items-center gap-1.5 transition-colors drop-shadow-sm' : 'text-xs font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white border-b-2 border-transparent pb-1 flex items-center gap-1.5 transition-colors drop-shadow-sm';
+            if (btnChatPC) btnChatPC.className = m === 'chat' ? 'text-xs font-bold uppercase tracking-widest text-zinc-900 dark:text-white border-b-2 border-zinc-900 dark:border-white pb-0.5 transition-colors drop-shadow-sm' : 'text-xs font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white border-b-2 border-transparent pb-0.5 transition-colors drop-shadow-sm';
+            if (btnImgPC) btnImgPC.className = m === 'image' ? 'text-xs font-bold uppercase tracking-widest text-zinc-900 dark:text-white border-b-2 border-zinc-900 dark:border-white pb-0.5 flex items-center gap-1.5 transition-colors drop-shadow-sm' : 'text-xs font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white border-b-2 border-transparent pb-0.5 flex items-center gap-1.5 transition-colors drop-shadow-sm';
             
             const btnChatMob = document.getElementById('btn-chat-mobile');
             const btnImgMob = document.getElementById('btn-image-mobile');
@@ -577,6 +565,7 @@
             clearAllAttachments();
 
             try {
+                // 🚀 POINTING TO THE VERCEL BACKEND (Relative Path)
                 const res = await fetch('/api/chat', { method: 'POST', body: formData });
                 const data = await res.json();
                 
