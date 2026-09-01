@@ -98,6 +98,10 @@
 
         .prose, .prose p, .prose li, .prose span, .prose a { font-weight: 500 !important; -webkit-user-select: text; user-select: text; }
         .prose strong, .prose b { font-weight: 800 !important; color: inherit; }
+        
+        /* 🚀 FORCES ALL AI ITALICS TO BE NORMAL TEXT BUT BOLD */
+        .prose em, .prose i { font-style: normal !important; font-weight: 800 !important; color: inherit; }
+        
         .prose p { margin-top: 0.4em; margin-bottom: 0.4em; }
         .prose ul > li::marker { color: #6b7280; font-size: 1.2em; }
         body.dark .prose ul > li::marker { color: #a1a1aa !important; }
@@ -195,7 +199,6 @@
                 <div class="sidebar-icon"><i data-lucide="settings"></i></div>
                 <span class="nav-text text-sm font-semibold ml-1">Settings</span>
             </button>
-            <!-- Desktop Fullscreen Button -->
             <button onclick="toggleFullScreen()" class="sidebar-btn hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-zinc-800 dark:text-zinc-200">
                 <div class="sidebar-icon"><i data-lucide="maximize" id="fs-icon-desktop"></i></div>
                 <span class="nav-text text-sm font-semibold ml-1" id="fs-text-desktop">Fullscreen</span>
@@ -208,7 +211,6 @@
     </aside>
 
     <div id="main-content" class="main-content-shift flex-1 flex flex-col min-w-0 relative bg-transparent pt-safe z-10 h-full">
-        <!-- 🚀 Mobile Header with Fullscreen Icon -->
         <header class="flex items-center px-4 py-2 lg:hidden relative z-10 bg-transparent flex-shrink-0">
             <button onclick="toggleMobileSidebar()" class="w-[44px] h-[44px] flex items-center justify-center text-zinc-900 dark:text-white rounded-full"><i data-lucide="menu"></i></button>
             <h1 class="ml-2 text-lg font-black tracking-widest uppercase text-zinc-900 dark:text-white font-beast-logo">Beast</h1>
@@ -237,12 +239,14 @@
             
             <div id="attachment-preview" class="hidden relative ml-4 mb-3 flex gap-2 overflow-x-auto custom-scrollbar max-w-full"></div>
             
+            <!-- 🚀 AUTO-EXPANDING TEXT AREA PILL -->
             <div class="relative flex items-end w-full bg-white/95 dark:bg-[#1e1e20]/95 backdrop-blur-md rounded-[2rem] sm:rounded-[2.5rem] shadow-[0_4px_25px_rgb(0,0,0,0.12)] dark:shadow-[0_4px_25px_rgb(0,0,0,0.6)] px-1 sm:px-2 py-1 border border-zinc-200 dark:border-zinc-700/80">
                 
                 <button onclick="document.getElementById('file-input').click()" class="p-3 sm:p-3.5 text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors rounded-full mb-1 flex-shrink-0"><i data-lucide="paperclip" class="w-5 h-5"></i></button>
                 <input type="file" id="file-input" class="hidden" accept="image/*,application/pdf" multiple onchange="handleFile(this)">
                 
-                <textarea id="user-input" rows="1" class="flex-1 min-w-0 bg-transparent border-none outline-none resize-none max-h-32 py-3.5 px-2 text-[15px] sm:text-base text-zinc-900 dark:text-white placeholder-zinc-500 font-medium leading-relaxed mb-0.5" placeholder="Ask Beast..." onkeydown="handleEnter(event)"></textarea>
+                <!-- 🚀 TEXTAREA: NOW AUTO-EXPANDS AND HIDES SCROLLBAR UNTIL MAX HEIGHT -->
+                <textarea id="user-input" rows="1" class="flex-1 min-w-0 bg-transparent border-none outline-none resize-none max-h-[140px] py-3.5 px-2 text-[15px] sm:text-base text-zinc-900 dark:text-white placeholder-zinc-500 font-medium leading-relaxed mb-0.5 custom-scrollbar overflow-y-auto" placeholder="Ask Beast..." onkeydown="handleEnter(event)" oninput="this.style.height='auto'; this.style.height=(this.scrollHeight)+'px';"></textarea>
                 
                 <div class="flex items-center mb-1 pr-0.5 flex-shrink-0">
                     
@@ -296,7 +300,7 @@
         let userName = localStorage.getItem('beast-username');
         let isDesktopSidebarLocked = localStorage.getItem('beast-sidebar-locked') === 'true';
 
-        // Fullscreen API Logic
+        // Fullscreen API
         function toggleFullScreen() {
             if (!document.fullscreenElement) {
                 document.documentElement.requestFullscreen().catch((err) => {
@@ -308,7 +312,6 @@
                 }
             }
         }
-
         document.addEventListener('fullscreenchange', () => {
             const isFS = !!document.fullscreenElement;
             document.getElementById('fs-icon-mobile').setAttribute('data-lucide', isFS ? 'minimize' : 'maximize');
@@ -332,7 +335,6 @@
                 icon.style.transform = 'rotate(0deg)';
             }
         }
-        
         window.onclick = function(e) {
             if(isSpeedMenuOpen && !e.target.closest('#speed-selector-wrap')) {
                 isSpeedMenuOpen = false;
@@ -346,7 +348,6 @@
             currentSpeed = s;
             const labels = { 'fast': 'Fast', 'normal': 'Normal', 'thinking': 'Thinking' };
             document.getElementById('current-speed-label').innerText = labels[s];
-            
             document.querySelectorAll('.speed-option').forEach(btn => {
                 if(btn.dataset.speed === s) {
                     btn.querySelector('.check-icon').classList.remove('opacity-0');
@@ -356,7 +357,6 @@
                     btn.querySelector('.check-icon').classList.remove('opacity-100');
                 }
             });
-            
             isSpeedMenuOpen = false;
             document.getElementById('speed-dropdown-menu').classList.add('hidden');
             document.getElementById('speed-dropdown-menu').classList.remove('flex');
@@ -367,13 +367,11 @@
             fetch('/api/chat').catch(() => {});
             if(localStorage.getItem('beast-theme') === 'dark') document.body.classList.add('dark'); 
             else if (localStorage.getItem('beast-theme') === 'light') document.body.classList.remove('dark');
-            
             const isDark = document.body.classList.contains('dark');
             document.getElementById('theme-icon-desktop').setAttribute('data-lucide', isDark ? 'sun' : 'moon'); 
             document.getElementById('theme-text-desktop').innerText = isDark ? 'Light Mode' : 'Dark Mode'; 
             document.getElementById('theme-icon-mobile').setAttribute('data-lucide', isDark ? 'sun' : 'moon'); 
             document.getElementById('theme-text-mobile').innerText = isDark ? 'Light Mode' : 'Dark Mode'; 
-            
             lucide.createIcons(); initDesktopSidebar(); loadHistory(); initName(); setMode('chat');
         };
 
@@ -383,7 +381,6 @@
         function closeSettings() { document.getElementById('settings-modal').classList.add('hidden'); }
         function saveSettings() { const input = document.getElementById('settings-name-input').value.trim(); if (input) { userName = input.toUpperCase(); localStorage.setItem('beast-username', userName); setGreeting(); closeSettings(); } }
         function setGreeting() { const nameToUse = userName || "MASTER"; const greetings = [`Ask away, ${nameToUse}!`, `The mic is yours, ${nameToUse}`, `Your move, ${nameToUse}!`]; document.getElementById('greeting-text').innerText = greetings[Math.floor(Math.random() * greetings.length)]; }
-
         function initDesktopSidebar() { const sb = document.getElementById('desktop-sidebar'); const main = document.getElementById('main-content'); const pill = document.getElementById('pill-wrapper'); if (isDesktopSidebarLocked) { sb.classList.add('locked'); main.classList.add('locked'); pill.classList.add('locked'); } else { sb.classList.remove('locked'); main.classList.remove('locked'); pill.classList.remove('locked'); } }
         function toggleDesktopSidebar() { isDesktopSidebarLocked = !isDesktopSidebarLocked; localStorage.setItem('beast-sidebar-locked', isDesktopSidebarLocked); initDesktopSidebar(); }
         function toggleTheme() { document.body.classList.toggle('dark'); const isDark = document.body.classList.contains('dark'); localStorage.setItem('beast-theme', isDark ? 'dark' : 'light'); document.getElementById('theme-icon-mobile').setAttribute('data-lucide', isDark ? 'sun' : 'moon'); document.getElementById('theme-text-mobile').innerText = isDark ? 'Light Mode' : 'Dark Mode'; document.getElementById('theme-icon-desktop').setAttribute('data-lucide', isDark ? 'sun' : 'moon'); document.getElementById('theme-text-desktop').innerText = isDark ? 'Light Mode' : 'Dark Mode'; lucide.createIcons(); }
@@ -394,11 +391,9 @@
             currentMode = m;
             const input = document.getElementById('user-input');
             input.placeholder = m === 'chat' ? "Ask Beast..." : "Describe an image...";
-            
             const btnChatPC = document.getElementById('btn-chat-pc'); const btnImgPC = document.getElementById('btn-image-pc');
             if (btnChatPC) btnChatPC.className = m === 'chat' ? 'text-xs font-bold uppercase tracking-widest text-zinc-900 dark:text-white border-b-2 border-zinc-900 dark:border-white pb-0.5 transition-colors drop-shadow-sm' : 'text-xs font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white border-b-2 border-transparent pb-0.5 transition-colors drop-shadow-sm';
             if (btnImgPC) btnImgPC.className = m === 'image' ? 'text-xs font-bold uppercase tracking-widest text-zinc-900 dark:text-white border-b-2 border-zinc-900 dark:border-white pb-0.5 flex items-center gap-1.5 transition-colors drop-shadow-sm' : 'text-xs font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white border-b-2 border-transparent pb-0.5 flex items-center gap-1.5 transition-colors drop-shadow-sm';
-            
             const speedWrap = document.getElementById('speed-selector-wrap');
             if (m === 'image') speedWrap.style.display = 'none'; else speedWrap.style.display = 'block';
         }
@@ -423,7 +418,12 @@
         async function sendMessage() {
             const input = document.getElementById('user-input'); const msg = input.value.trim();
             if (!msg && attachedFiles.length === 0) return;
-            input.value = ''; if (!currentSessionId) currentSessionId = "BeastSession_" + Date.now();
+            
+            // 🚀 Reset Text Box Height upon sending
+            input.value = ''; 
+            input.style.height = 'auto'; 
+            
+            if (!currentSessionId) currentSessionId = "BeastSession_" + Date.now();
             document.getElementById('welcome-box').style.display = 'none'; const chatBox = document.getElementById('chat-box'); chatBox.classList.replace('hidden', 'flex'); document.getElementById('send-btn').disabled = true;
             const currentFilesSnapshot = attachedFiles.map(f => ({ name: f.name, isPdf: f.isPdf, preview: f.preview }));
             let userHtml = `<div class="flex justify-end w-full"><div class="bg-white/90 dark:bg-zinc-800/90 backdrop-blur-md text-zinc-900 dark:text-zinc-100 px-5 py-3 rounded-[1.5rem] rounded-tr-sm max-w-[85%] text-[15px] sm:text-base leading-relaxed shadow-sm border border-black/5 dark:border-white/10">`;
@@ -436,13 +436,12 @@
             const beastHtml = `<div id="beast-wrap-${msgId}" class="flex flex-col items-start w-full max-w-[90%]"><div class="flex items-center gap-3 mb-2"><img src="/beast_ai.png" class="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover shadow-sm bg-black"><span class="text-[13px] font-bold text-zinc-900 dark:text-zinc-100 uppercase tracking-wide drop-shadow-md">Beast AI</span></div>${loaderHTML}<div id="beast-box-${msgId}" class="pl-[2.7rem] sm:pl-[3.2rem] w-full hidden"><div class="prose dark:prose-invert prose-sm sm:prose-base leading-relaxed break-words w-full max-w-none text-zinc-900 dark:text-zinc-100"></div></div></div>`;
             chatBox.insertAdjacentHTML('beforeend', beastHtml); lucide.createIcons(); document.getElementById('scroll-container').scrollTop = document.getElementById('scroll-container').scrollHeight;
 
-            const formData = new FormData(); formData.append('message', msg); formData.append('mode', currentMode);
-            formData.append('speed', currentSpeed);
-
+            const formData = new FormData(); formData.append('message', msg); formData.append('mode', currentMode); formData.append('speed', currentSpeed);
             let session = JSON.parse(localStorage.getItem(currentSessionId)) || { pinned: false, messages: [] }; let chatHistory = session.messages.slice(-100).map(m => ({ type: m.type, message: m.message || "" })); formData.append('history', JSON.stringify(chatHistory));
             for (let i = 0; i < attachedFiles.length; i++) { formData.append('files', await compressImage(attachedFiles[i].file)); } clearAllAttachments();
 
             try {
+                // 🚀 VERCEL BACKEND URL
                 const res = await fetch('/api/chat', { method: 'POST', body: formData });
                 const data = await res.json();
                 const loader = document.getElementById(`loader-${msgId}`); const targetBoxWrap = document.getElementById(`beast-box-${msgId}`); const targetBox = targetBoxWrap.querySelector('.prose');
