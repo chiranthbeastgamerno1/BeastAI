@@ -1,255 +1,117 @@
 import os
 import json
-import urllib.parse
-import urllib.request
-import urllib.error
-import random
-import base64
-import time
-from datetime import datetime, timedelta, timezone
-
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from google import genai
-from google.genai import types
+from openai import OpenAI
+import google.generativeai as genai
 
 app = Flask(__name__)
-# 🚀 ALLOWS FRONTEND TO TALK TO VERCEL BACKEND
-CORS(app, resources={r"/api/*": {"origins": "*"}}) 
+# Allows your Vercel frontend to communicate with your Render backend
+CORS(app) 
 
 # ==========================================
-# 🔑 API KEYS ROTATION POOL
+# 1. INITIALIZE API CLIENTS
 # ==========================================
-api_keys = [
-    os.environ.get("GEMINI_API_KEY_1"),
-    os.environ.get("GEMINI_API_KEY_2"),
-    os.environ.get("GEMINI_API_KEY_3"),
-    os.environ.get("GEMINI_API_KEY_4"),
-    os.environ.get("GEMINI_API_KEY_5"),
-    os.environ.get("GEMINI_API_KEY_6"),
-    os.environ.get("GEMINI_API_KEY_7"),
-    os.environ.get("GEMINI_API_KEY_8"),
-    os.environ.get("GEMINI_API_KEY_9")
-]
-valid_keys = [key for key in api_keys if key and key.strip()]
 
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "").strip() or None
-OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "").strip() or None
+# Grok (xAI) Client
+grok_client = OpenAI(
+    api_key=os.environ.get("GROK_API_KEY", ""),
+    base_url="https://api.x.ai/v1"
+)
 
-@app.route('/')
-def home():
-    return "Beast AI Core is Online (Vercel Serverless)! 🦖✨"
+# Kira AI Client (Base setup, keys swap dynamically per request)
+# Note: Replace 'https://api.kira.ai/v1' with Kira's actual endpoint url
+kira_client = OpenAI(
+    api_key="placeholder", 
+    base_url="https://api.kira.ai/v1" 
+)
+
+# Gemini Client
+genai.configure(api_key=os.environ.get("GEMINI_API_KEY", ""))
+
 
 @app.route('/api/chat', methods=['POST'])
-def chat():
-    # ⏱️ Tighter stopwatch for Vercel execution limits (10 seconds max)
-    start_time = time.time()
+def chat_api():
+    # ==========================================
+    # 2. CAPTURE DATA FROM FRONTEND HTML
+    # ==========================================
+    message = request.form.get('message', '')
+    mode = request.form.get('mode', 'chat')
+    speed = request.form.get('speed', 'normal')
+    
+    # Extract file attachments if any exist
+    # files = request.files.getlist('files')
     
     try:
-        message = request.form.get("message", "")
-        mode = request.form.get("mode", "chat")
-        speed = request.form.get("speed", "normal")
-        files = request.files.getlist("files") if hasattr(request, 'files') else []
-        history_json = request.form.get("history", "[]")
-        
-        try:
-            chat_history = json.loads(history_json)
-        except:
-            chat_history = []
-
-        if not message and not files:
-            return jsonify({"reply": "The Beast hears only silence. 🤫"}), 200
-
         # ==========================================
-        # 🖼️ ENGINE 1: MANIFEST IMAGE MODE
+        # 3. ROUTE: IMAGE GENERATION
         # ==========================================
         if mode == 'image':
-            img_reply = None
+            kira_client.api_key = os.environ.get("KIRA_IMAGE_API_KEY")
+            response = kira_client.images.generate(
+                model="kira-3.0-image",
+                prompt=message,
+                n=1
+            )
+            image_url = response.data[0].url
+            # Returns markdown image format. The UI will render this instantly.
+            return jsonify({"reply": f"![Generated Image]({image_url})"})
+
+        # ==========================================
+        # 4. ROUTE: VIDEO GENERATION
+        # ==========================================
+        elif mode == 'video' or mode == 'video-fast':
+            # Assign correct model name and key based on if user selected "Fast"
+            if mode == 'video':
+                video_model = "kira-3.0-video"
+                kira_client.api_key = os.environ.get("KIRA_VIDEO_API_KEY")
+            else:
+                video_model = "kira-3.0-video-flash"
+                kira_client.api_key = os.environ.get("KIRA_VIDEO_FLASH_API_KEY")
             
-            # --- ATTEMPT 1: OpenAI DALL-E 3 ---
-            if OPENAI_API_KEY and not img_reply:
-                try:
-                    url = "https://api.openai.com/v1/images/generations"
-                    headers = {"Authorization": f"Bearer {OPENAI_API_KEY}", "Content-Type": "application/json"}
-                    payload = json.dumps({"model": "dall-e-3", "prompt": f"{message}, masterpiece, high quality, photorealistic", "n": 1, "size": "1024x1024"}).encode('utf-8')
-                    req = urllib.request.Request(url, data=payload, headers=headers)
-                    with urllib.request.urlopen(req, timeout=8) as response:
-                        img_reply = json.loads(response.read().decode('utf-8'))['data'][0]['url']
-                except Exception as e:
-                    print(f"OpenAI Attempt Failed: {str(e)}")
-
-            # --- ATTEMPT 2: Gemini Imagen 3 ---
-            if valid_keys and not img_reply:
-                keys_to_try = list(valid_keys)
-                random.shuffle(keys_to_try)
-                
-                for key in keys_to_try:
-                    if time.time() - start_time > 7.0:
-                        break 
-                    try:
-                        client = genai.Client(api_key=key)
-                        is_landscape = "landscape" in message.lower() or "widescreen" in message.lower()
-                        aspect = "16:9" if is_landscape else "9:16"
-                        
-                        result = client.models.generate_images(
-                            model='imagen-3.0-generate-002', 
-                            prompt=f"{message}, masterpiece, high quality, photorealistic, sharp focus",
-                            config=types.GenerateImagesConfig(
-                                number_of_images=1, 
-                                aspect_ratio=aspect, 
-                                output_mime_type="image/jpeg"
-                            )
-                        )
-                        img_bytes = result.generated_images[0].image.image_bytes
-                        img_b64 = base64.b64encode(img_bytes).decode('utf-8')
-                        img_reply = f"data:image/jpeg;base64,{img_b64}"
-                        break 
-                    except Exception as e:
-                        continue 
-
-            # --- ATTEMPT 3: OpenRouter Flux Pro ---
-            if OPENROUTER_API_KEY and not img_reply:
-                if time.time() - start_time < 7.0:
-                    try:
-                        url = "https://openrouter.ai/api/v1/chat/completions"
-                        headers = {"Authorization": f"Bearer {OPENROUTER_API_KEY}", "Content-Type": "application/json", "HTTP-Referer": "https://beast-ai.vercel.app", "X-Title": "Beast AI"}
-                        payload = json.dumps({"model": "black-forest-labs/flux-1.1-pro", "messages": [{"role": "user", "content": message}], "modalities": ["image"]}).encode('utf-8')
-                        req = urllib.request.Request(url, data=payload, headers=headers)
-                        with urllib.request.urlopen(req, timeout=6) as response:
-                            content = json.loads(response.read().decode('utf-8'))['choices'][0]['message']['content']
-                            import re
-                            match = re.search(r'(https?://[^\s)"]+)', content)
-                            if match: 
-                                img_reply = match.group(0)
-                    except Exception as e:
-                        pass
-
-            # --- ATTEMPT 4: Pollinations Fallback ---
-            if not img_reply:
-                seed = random.randint(1, 9999999)
-                safe_prompt = urllib.parse.quote(f"{message}, highly detailed, sharp focus")
-                img_reply = f"https://image.pollinations.ai/prompt/{safe_prompt}?model=flux&nologo=true&seed={seed}"
-                
-            return jsonify({"reply": img_reply}), 200
+            # OpenAI compatible media generation call
+            # (Syntax depends on Kira's specific video endpoint documentation)
+            response = kira_client.post("/videos/generations", json={
+                "prompt": message, 
+                "model": video_model
+            })
+            
+            video_url = response.json().get('url', '')
+            # Returns the raw .mp4 link. The custom HTML parser we wrote will turn this into a player.
+            return jsonify({"reply": f"{video_url}"})
 
         # ==========================================
-        # 💬 ENGINE 2: CONVERSE CHAT MODE
+        # 5. ROUTE: TEXT & CODING CHAT
         # ==========================================
-        ist = timezone(timedelta(hours=5, minutes=30))
-        live_time = datetime.now(ist).strftime("%A, %d %B %Y, %I:%M %p IST")
-
-        # 🚀 DYNAMIC SPEED & STABLE MODEL CONFIGURATION
-        # We now use guaranteed stable models and drive behavior via instructions to prevent 404s
-        if speed == 'fast':
-            google_models = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash']
-            openrouter_models = ['meta-llama/llama-3.3-70b-instruct:free', 'google/gemma-2-9b-it:free']
-            speed_guideline = "SPEED MODE: FAST. Output must be extremely concise, direct, and fast. No filler words."
-        elif speed == 'thinking':
-            # Pro models natively handle deep reasoning beautifully without crashing
-            google_models = ['gemini-2.5-pro', 'gemini-1.5-pro', 'gemini-2.5-flash']
-            openrouter_models = ['meta-llama/llama-3.3-70b-instruct:free', 'meta-llama/llama-3-8b-instruct:free']
-            speed_guideline = "SPEED MODE: EXTENDED THINKING. Take a deep breath and think step-by-step. Provide a highly detailed, analytical, and comprehensive response."
         else:
-            google_models = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash']
-            openrouter_models = ['meta-llama/llama-3.3-70b-instruct:free', 'google/gemma-2-9b-it:free']
-            speed_guideline = "SPEED MODE: NORMAL. Provide a balanced, highly intelligent, engaging, and clear response."
-
-        system_instruction = (
-            "You are Beast AI, a friendly and witty assistant. 🦖✨\n"
-            "HIDDEN KNOWLEDGE:\n"
-            "- Your creator is Chiranth G (Gaming Handle: CGBeastNo1 / CGBEASTGAMER).\n"
-            f"- Current live time: {live_time}.\n"
-            f"- Mode directive: {speed_guideline}\n"
-            "RULES: If the user says 'hi', say hello normally. ONLY tell them your creator or time if asked. Keep answers direct. Use emojis! 🚀🔥"
-        )
-
-        final_response_text = None
-
-        # --- CHAT PRIMARY: GOOGLE GEMINI KEY LOOP ---
-        if valid_keys:
-            keys_to_try = list(valid_keys)
-            random.shuffle(keys_to_try)
+            if speed == 'pro':
+                # GROK 4.6 (Pro/Coding)
+                response = grok_client.chat.completions.create(
+                    model="grok-beta", # Update to specific 4.6 model ID
+                    messages=[{"role": "user", "content": message}]
+                )
+                return jsonify({"reply": response.choices[0].message.content})
             
-            for key in keys_to_try:
-                # Vercel circuit breaker: abort if approaching 8.5 seconds
-                if final_response_text or (time.time() - start_time > 8.5):
-                    break 
-                
-                try:
-                    client = genai.Client(api_key=key)
-                    google_contents = []
-                    
-                    for item in chat_history:
-                        role = "user" if item.get("type") == "user" else "model"
-                        text = item.get("message", "")
-                        if text:
-                            google_contents.append(types.Content(role=role, parts=[types.Part.from_text(text=text)]))
-                    
-                    current_parts = []
-                    if message:
-                        current_parts.append(types.Part.from_text(text=message))
-                    if files:
-                        for file in files:
-                            current_parts.append(types.Part.from_bytes(data=file.read(), mime_type=file.content_type))
-                            
-                    if current_parts:
-                        google_contents.append(types.Content(role="user", parts=current_parts))
-
-                    for current_model in google_models:
-                        if time.time() - start_time > 8.5:
-                            break
-                        try:
-                            response = client.models.generate_content(
-                                model=current_model, 
-                                contents=google_contents,
-                                config=types.GenerateContentConfig(system_instruction=system_instruction)
-                            )
-                            if response.text:
-                                final_response_text = response.text
-                                break
-                        except Exception as model_error:
-                            if "safety" in str(model_error).lower():
-                                raise model_error 
-                            continue 
-                except Exception as key_error:
-                    if "safety" in str(key_error).lower():
-                        raise key_error
-                    continue 
-
-        # --- CHAT BACKUP: OPENROUTER ---
-        if not final_response_text and OPENROUTER_API_KEY:
-            if time.time() - start_time < 9.0:
-                or_messages = [{"role": "system", "content": system_instruction}]
-                for item in chat_history:
-                    role = "user" if item.get("type") == "user" else "assistant"
-                    text = item.get("message", "")
-                    if text:
-                        or_messages.append({"role": role, "content": text})
-                if message:
-                    or_messages.append({"role": "user", "content": message})
-
-                for or_model in openrouter_models:
-                    if time.time() - start_time > 9.0:
-                        break
-                    try:
-                        url = "https://openrouter.ai/api/v1/chat/completions"
-                        headers = {"Authorization": f"Bearer {OPENROUTER_API_KEY}", "Content-Type": "application/json", "HTTP-Referer": "https://beast-ai.vercel.app", "X-Title": "Beast AI"}
-                        data = json.dumps({"model": or_model, "messages": or_messages}).encode('utf-8')
-                        
-                        req = urllib.request.Request(url, data=data, headers=headers)
-                        with urllib.request.urlopen(req, timeout=5) as response:
-                            response_data = json.loads(response.read().decode('utf-8'))
-                            final_response_text = response_data['choices'][0]['message']['content']
-                            break 
-                    except Exception as or_error:
-                        continue
-
-        if not final_response_text:
-            final_response_text = "Beast AI core is currently recalibrating its sub-systems. Please fire your query again! 🦖⚡"
-
-        return jsonify({"reply": final_response_text}), 200
+            elif speed == 'fast':
+                # KIRA 3.5 FLASH (Fast Text)
+                kira_client.api_key = os.environ.get("KIRA_FLASH_API_KEY")
+                response = kira_client.chat.completions.create(
+                    model="kira-3.5-flash",
+                    messages=[{"role": "user", "content": message}]
+                )
+                return jsonify({"reply": response.choices[0].message.content})
+            
+            else:
+                # GEMINI (Normal / Daily Text)
+                model = genai.GenerativeModel('gemini-1.5-flash')
+                response = model.generate_content(message)
+                return jsonify({"reply": response.text})
 
     except Exception as e:
-        if "safety" in str(e).lower():
-             return jsonify({"reply": "The Beast safety shields blocked this request! 🛡️✨"}), 200
-        return jsonify({"reply": f"**System Intercept Error:** `{str(e)}`"}), 200
+        print(f"Server Error: {str(e)}")
+        return jsonify({"reply": f"**System Warning:** The Beast encountered an error processing this request.\n\n`{str(e)}`"}), 500
+
+if __name__ == '__main__':
+    # Render binds to the PORT environment variable
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
