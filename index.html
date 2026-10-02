@@ -144,7 +144,6 @@
                     <img src="/beast_ai.png" class="w-16 h-16 sm:w-20 sm:h-20 mb-6 object-cover rounded-full shadow-lg shadow-black/10 dark:shadow-white/5 animate-pulse bg-black" alt="Beast AI">
                     <h2 id="greeting-text" class="text-3xl sm:text-4xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 pb-2 drop-shadow-md"></h2>
                 </div>
-                <!-- 🚀 FIXED: Added py-4 to ensure proper scroll clearance -->
                 <div id="chat-box" class="w-full space-y-2 hidden flex-col pb-10 py-4"></div>
             </div>
         </main>
@@ -221,7 +220,7 @@
         let currentMode = 'chat'; let currentSpeed = 'normal'; let attachedFiles = []; let currentSessionId = null;
         let userName = localStorage.getItem('beast-username'); let isDesktopSidebarLocked = localStorage.getItem('beast-sidebar-locked') === 'true';
 
-        // Media Parser: Renders raw mp4 links into inline HTML5 video players
+        // Media Parser
         function processMedia(text) {
             if (!text) return "";
             return text.replace(/(?:!\[.*?\]\()?(https?:\/\/[^\s)]+\.mp4)(?:\))?/gi, '\n\n<video src="$1" controls autoplay loop playsinline class="w-full rounded-xl shadow-md my-3 border border-black/5 dark:border-white/10"></video>\n\n');
@@ -298,7 +297,6 @@
         }
 
         window.onload = () => { 
-            // VERCEL: Wakes up the serverless function
             fetch('/api/chat').catch(() => {});
             if(localStorage.getItem('beast-theme') === 'dark') document.body.classList.add('dark'); else if (localStorage.getItem('beast-theme') === 'light') document.body.classList.remove('dark');
             const isDark = document.body.classList.contains('dark');
@@ -313,7 +311,7 @@
         function closeSettings() { document.getElementById('settings-modal').classList.add('hidden'); }
         function saveSettings() { const input = document.getElementById('settings-name-input').value.trim(); if (input) { userName = input.toUpperCase(); localStorage.setItem('beast-username', userName); setGreeting(); closeSettings(); } }
         function setGreeting() { const nameToUse = userName || "MASTER"; const greetings = [`Ask away, ${nameToUse}!`, `The mic is yours, ${nameToUse}`, `Your move, ${nameToUse}!`]; document.getElementById('greeting-text').innerText = greetings[Math.floor(Math.random() * greetings.length)]; }
-        function initDesktopSidebar() { const sb = document.getElementById('desktop-sidebar'); const main = document.getElementById('main-content'); const pill = document.getElementById('pill-wrapper'); if (isDesktopSidebarLocked) { sb.classList.add('locked'); main.classList.add('locked'); pill.classList.add('locked'); } else { sb.classList.remove('locked'); main.classList.remove('locked'); pill.classList.remove('locked'); } }
+        function initDesktopSidebar() { const sb = document.getElementById('desktop-sidebar'); const main = document.getElementById('main-content'); const pill = document.getElementById('pill-wrapper'); if (isDesktopSidebarLocked) { sb.classList.add('locked'); main.classList.add('locked'); pill.classList.add('locked'); } else { sb.classList.remove('locked'); main.classList.remove('locked'); pill.classList.add('locked'); } }
         function toggleDesktopSidebar() { isDesktopSidebarLocked = !isDesktopSidebarLocked; localStorage.setItem('beast-sidebar-locked', isDesktopSidebarLocked); initDesktopSidebar(); }
         function toggleTheme() { document.body.classList.toggle('dark'); const isDark = document.body.classList.contains('dark'); localStorage.setItem('beast-theme', isDark ? 'dark' : 'light'); document.getElementById('theme-icon-mobile').setAttribute('data-lucide', isDark ? 'sun' : 'moon'); document.getElementById('theme-text-mobile').innerText = isDark ? 'Light Mode' : 'Dark Mode'; document.getElementById('theme-icon-desktop').setAttribute('data-lucide', isDark ? 'sun' : 'moon'); document.getElementById('theme-text-desktop').innerText = isDark ? 'Light Mode' : 'Dark Mode'; lucide.createIcons(); }
         function toggleMobileSidebar() { const sb = document.getElementById('mobile-sidebar'); const overlay = document.getElementById('mobile-overlay'); sb.classList.toggle('-translate-x-full'); overlay.classList.toggle('hidden'); }
@@ -342,7 +340,7 @@
             
             const currentFilesSnapshot = attachedFiles.map(f => ({ name: f.name, isPdf: f.isPdf, preview: f.preview }));
             
-            // 🚀 FIXED: Added mb-6 to user message wrapper to restore vertical gap
+            // 🚀 FIXED: RESTORED mb-6 FOR CHAT BUBBLE SPACING
             let userHtml = `<div class="flex justify-end w-full mb-6"><div class="bg-white/90 dark:bg-zinc-800/90 backdrop-blur-md text-zinc-900 dark:text-zinc-100 px-5 py-3 rounded-[1.5rem] rounded-tr-sm max-w-[85%] text-[15px] sm:text-base leading-relaxed shadow-sm border border-black/5 dark:border-white/10">`;
             
             if (currentFilesSnapshot.length > 0) { 
@@ -360,7 +358,7 @@
             const msgId = Date.now();
             let loaderHTML = `<div id="loader-${msgId}" class="pl-[2.7rem] sm:pl-[3.2rem]"><div class="jumping-dots text-zinc-500 dark:text-zinc-400 py-2"><span></span><span></span><span></span></div></div>`; 
             
-            // 🚀 FIXED: Added mb-6 to beast wrapper to restore vertical gap
+            // 🚀 FIXED: RESTORED mb-6 FOR BEAST BUBBLE SPACING
             const beastHtml = `<div id="beast-wrap-${msgId}" class="flex flex-col items-start w-full max-w-[90%] mb-6"><div class="flex items-center gap-3 mb-2"><img src="/beast_ai.png" class="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover shadow-sm bg-black"><span class="text-[13px] font-bold text-zinc-900 dark:text-zinc-100 uppercase tracking-wide drop-shadow-md">Beast AI</span></div>${loaderHTML}<div id="beast-box-${msgId}" class="pl-[2.7rem] sm:pl-[3.2rem] w-full hidden"><div class="prose dark:prose-invert prose-sm sm:prose-base leading-relaxed break-words w-full max-w-none text-zinc-900 dark:text-zinc-100"></div></div></div>`;
             chatBox.insertAdjacentHTML('beforeend', beastHtml); 
             lucide.createIcons(); 
@@ -378,7 +376,7 @@
             clearAllAttachments();
 
             try {
-                // VERCEL FETCH
+                // VERCEL FETCH: Uses relative URL
                 const res = await fetch('/api/chat', { method: 'POST', body: formData });
                 const data = await res.json();
                 const loader = document.getElementById(`loader-${msgId}`); 
@@ -410,7 +408,6 @@
         function appendHistoryMessage(m) { 
             const chatBox = document.getElementById('chat-box'); 
             if (m.type === 'user') { 
-                // 🚀 FIXED: Added mb-6
                 let inner = `<div class="flex justify-end w-full mb-6"><div class="bg-white/90 dark:bg-zinc-800/90 backdrop-blur-md text-zinc-900 dark:text-zinc-100 px-5 py-3 rounded-[1.5rem] rounded-tr-sm max-w-[85%] text-[15px] sm:text-base leading-relaxed shadow-sm border border-black/5 dark:border-white/10">`; 
                 if (m.files && m.files.length > 0) { 
                     inner += `<div class="flex flex-wrap gap-2 justify-end mb-2">`; 
@@ -424,7 +421,6 @@
                 chatBox.insertAdjacentHTML('beforeend', inner + `</div></div>`); 
             } else { 
                 let contentHtml = marked.parse(processMedia(m.message)); 
-                // 🚀 FIXED: Added mb-6
                 const html = `<div class="flex flex-col items-start w-full max-w-[90%] mb-6"><div class="flex items-center gap-3 mb-2"><img src="/beast_ai.png" class="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover shadow-sm bg-black"><span class="text-[13px] font-bold text-zinc-900 dark:text-zinc-100 uppercase tracking-wide drop-shadow-md">Beast AI</span></div><div class="pl-[2.7rem] sm:pl-[3.2rem] w-full"><div class="prose dark:prose-invert prose-sm sm:prose-base leading-relaxed break-words w-full max-w-none text-zinc-900 dark:text-zinc-100">${contentHtml}</div></div></div>`; 
                 chatBox.insertAdjacentHTML('beforeend', html); 
                 chatBox.querySelectorAll('pre').forEach(pre => pre.classList.add('bg-[#1e1e20]/90', 'backdrop-blur-md', 'text-zinc-100', 'p-4', 'rounded-xl', 'overflow-x-auto', 'my-4', 'border', 'border-zinc-800')); 
