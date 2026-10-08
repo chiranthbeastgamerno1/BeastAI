@@ -144,6 +144,7 @@
                     <img src="/beast_ai.png" class="w-16 h-16 sm:w-20 sm:h-20 mb-6 object-cover rounded-full shadow-lg shadow-black/10 dark:shadow-white/5 animate-pulse bg-black" alt="Beast AI">
                     <h2 id="greeting-text" class="text-3xl sm:text-4xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 pb-2 drop-shadow-md"></h2>
                 </div>
+                <!-- 🚀 Restored py-4 for proper spacing -->
                 <div id="chat-box" class="w-full space-y-2 hidden flex-col pb-10 py-4"></div>
             </div>
         </main>
@@ -156,7 +157,6 @@
             
             <div class="relative flex items-end w-full bg-white/95 dark:bg-[#1e1e20]/95 backdrop-blur-md rounded-[2rem] sm:rounded-[2.5rem] shadow-[0_4px_25px_rgb(0,0,0,0.12)] dark:shadow-[0_4px_25px_rgb(0,0,0,0.6)] p-1.5 sm:p-2 border border-zinc-200 dark:border-zinc-700/80">
                 
-                <!-- DROPDOWN: Attachments & Media Generation -->
                 <div class="relative z-40 flex-shrink-0">
                     <button id="attach-dropdown-btn" onclick="toggleAttachDropdown(event)" class="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors rounded-full mb-0.5 sm:mb-1">
                         <i data-lucide="plus" id="plus-icon" class="w-5 h-5 transition-transform duration-300"></i>
@@ -185,7 +185,6 @@
                 <textarea id="user-input" rows="1" class="flex-1 min-w-0 bg-transparent border-none outline-none resize-none max-h-[140px] py-2 px-2 sm:py-2.5 sm:px-3 text-[15px] sm:text-base text-zinc-900 dark:text-white placeholder-zinc-500 font-medium leading-relaxed mb-0.5 sm:mb-1 custom-scrollbar overflow-y-auto" placeholder="Ask Beast..." onkeydown="handleEnter(event)" oninput="checkInput()"></textarea>
                 
                 <div class="flex items-center gap-1 sm:gap-1.5 pr-1 flex-shrink-0 mb-[0.15rem] sm:mb-[0.30rem]">
-                    <!-- DROPDOWN: Speed/Model -->
                     <div id="speed-selector-wrap" class="relative z-40">
                         <button id="speed-dropdown-btn" onclick="toggleSpeedDropdown(event)" class="h-9 sm:h-10 flex items-center gap-1.5 px-3 bg-zinc-100 dark:bg-[#2e2e31] rounded-2xl hover:bg-zinc-200 dark:hover:bg-[#3a3a3d] transition-colors text-zinc-700 dark:text-zinc-300">
                             <span id="current-speed-label" class="text-xs sm:text-sm font-semibold tracking-wide">Normal</span>
@@ -220,7 +219,7 @@
         let currentMode = 'chat'; let currentSpeed = 'normal'; let attachedFiles = []; let currentSessionId = null;
         let userName = localStorage.getItem('beast-username'); let isDesktopSidebarLocked = localStorage.getItem('beast-sidebar-locked') === 'true';
 
-        // Media Parser
+        // Media Parser: Renders raw mp4 links into inline HTML5 video players
         function processMedia(text) {
             if (!text) return "";
             return text.replace(/(?:!\[.*?\]\()?(https?:\/\/[^\s)]+\.mp4)(?:\))?/gi, '\n\n<video src="$1" controls autoplay loop playsinline class="w-full rounded-xl shadow-md my-3 border border-black/5 dark:border-white/10"></video>\n\n');
@@ -297,6 +296,7 @@
         }
 
         window.onload = () => { 
+            // VERCEL FETCH WAKEUP
             fetch('/api/chat').catch(() => {});
             if(localStorage.getItem('beast-theme') === 'dark') document.body.classList.add('dark'); else if (localStorage.getItem('beast-theme') === 'light') document.body.classList.remove('dark');
             const isDark = document.body.classList.contains('dark');
@@ -340,7 +340,7 @@
             
             const currentFilesSnapshot = attachedFiles.map(f => ({ name: f.name, isPdf: f.isPdf, preview: f.preview }));
             
-            // 🚀 FIXED: RESTORED mb-6 FOR CHAT BUBBLE SPACING
+            // 🚀 RESTORED mb-6 FOR CHAT BUBBLE SPACING
             let userHtml = `<div class="flex justify-end w-full mb-6"><div class="bg-white/90 dark:bg-zinc-800/90 backdrop-blur-md text-zinc-900 dark:text-zinc-100 px-5 py-3 rounded-[1.5rem] rounded-tr-sm max-w-[85%] text-[15px] sm:text-base leading-relaxed shadow-sm border border-black/5 dark:border-white/10">`;
             
             if (currentFilesSnapshot.length > 0) { 
@@ -358,7 +358,7 @@
             const msgId = Date.now();
             let loaderHTML = `<div id="loader-${msgId}" class="pl-[2.7rem] sm:pl-[3.2rem]"><div class="jumping-dots text-zinc-500 dark:text-zinc-400 py-2"><span></span><span></span><span></span></div></div>`; 
             
-            // 🚀 FIXED: RESTORED mb-6 FOR BEAST BUBBLE SPACING
+            // 🚀 RESTORED mb-6 FOR BEAST BUBBLE SPACING
             const beastHtml = `<div id="beast-wrap-${msgId}" class="flex flex-col items-start w-full max-w-[90%] mb-6"><div class="flex items-center gap-3 mb-2"><img src="/beast_ai.png" class="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover shadow-sm bg-black"><span class="text-[13px] font-bold text-zinc-900 dark:text-zinc-100 uppercase tracking-wide drop-shadow-md">Beast AI</span></div>${loaderHTML}<div id="beast-box-${msgId}" class="pl-[2.7rem] sm:pl-[3.2rem] w-full hidden"><div class="prose dark:prose-invert prose-sm sm:prose-base leading-relaxed break-words w-full max-w-none text-zinc-900 dark:text-zinc-100"></div></div></div>`;
             chatBox.insertAdjacentHTML('beforeend', beastHtml); 
             lucide.createIcons(); 
@@ -376,7 +376,7 @@
             clearAllAttachments();
 
             try {
-                // VERCEL FETCH: Uses relative URL
+                // 🚀 VERCEL FETCH: Uses relative URL
                 const res = await fetch('/api/chat', { method: 'POST', body: formData });
                 const data = await res.json();
                 const loader = document.getElementById(`loader-${msgId}`); 
@@ -408,6 +408,7 @@
         function appendHistoryMessage(m) { 
             const chatBox = document.getElementById('chat-box'); 
             if (m.type === 'user') { 
+                // 🚀 RESTORED mb-6
                 let inner = `<div class="flex justify-end w-full mb-6"><div class="bg-white/90 dark:bg-zinc-800/90 backdrop-blur-md text-zinc-900 dark:text-zinc-100 px-5 py-3 rounded-[1.5rem] rounded-tr-sm max-w-[85%] text-[15px] sm:text-base leading-relaxed shadow-sm border border-black/5 dark:border-white/10">`; 
                 if (m.files && m.files.length > 0) { 
                     inner += `<div class="flex flex-wrap gap-2 justify-end mb-2">`; 
@@ -421,6 +422,7 @@
                 chatBox.insertAdjacentHTML('beforeend', inner + `</div></div>`); 
             } else { 
                 let contentHtml = marked.parse(processMedia(m.message)); 
+                // 🚀 RESTORED mb-6
                 const html = `<div class="flex flex-col items-start w-full max-w-[90%] mb-6"><div class="flex items-center gap-3 mb-2"><img src="/beast_ai.png" class="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover shadow-sm bg-black"><span class="text-[13px] font-bold text-zinc-900 dark:text-zinc-100 uppercase tracking-wide drop-shadow-md">Beast AI</span></div><div class="pl-[2.7rem] sm:pl-[3.2rem] w-full"><div class="prose dark:prose-invert prose-sm sm:prose-base leading-relaxed break-words w-full max-w-none text-zinc-900 dark:text-zinc-100">${contentHtml}</div></div></div>`; 
                 chatBox.insertAdjacentHTML('beforeend', html); 
                 chatBox.querySelectorAll('pre').forEach(pre => pre.classList.add('bg-[#1e1e20]/90', 'backdrop-blur-md', 'text-zinc-100', 'p-4', 'rounded-xl', 'overflow-x-auto', 'my-4', 'border', 'border-zinc-800')); 
