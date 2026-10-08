@@ -1,259 +1,233 @@
-import json
 import os
-import random
-import urllib.error
+import json
 import urllib.parse
 import urllib.request
-from datetime import datetime
-from zoneinfo import ZoneInfo
+import urllib.error
+import random
+import time
+from datetime import datetime, timedelta, timezone
 
-from flask import Flask, jsonify, request
+from flask import Flask, request, jsonify
 from flask_cors import CORS
+from google import genai
+from google.genai import types
 
 app = Flask(__name__)
-CORS(app, resources={r"/api/*": {"origins": "*"}})
+# 🚀 ALLOWS FRONTEND TO TALK TO VERCEL BACKEND
+CORS(app, resources={r"/api/*": {"origins": "*"}}) 
 
-GEMINI_MODELS = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"]
+# 🚀 LOADS EVERY SINGLE GEMINI KEY (1 through 9)
+api_keys = [
+    os.environ.get("GEMINI_API_KEY_1"),
+    os.environ.get("GEMINI_API_KEY_2"),
+    os.environ.get("GEMINI_API_KEY_3"),
+    os.environ.get("GEMINI_API_KEY_4"),
+    os.environ.get("GEMINI_API_KEY_5"),
+    os.environ.get("GEMINI_API_KEY_6"),
+    os.environ.get("GEMINI_API_KEY_7"),
+    os.environ.get("GEMINI_API_KEY_8"),
+    os.environ.get("GEMINI_API_KEY_9")
+]
+valid_keys = [key for key in api_keys if key and key.strip()]
 
-
-def now_ist():
-    try:
-        return datetime.now(ZoneInfo("Asia/Kolkata")).strftime("%A, %d %B %Y, %I:%M %p IST")
-    except Exception:
-        return datetime.utcnow().isoformat() + "Z"
-
-
-def system_instruction(user_name=None):
-    extra = f"- You are speaking to {user_name}. Address them naturally by name sometimes.\n" if user_name else ""
-    return (
-        "You are Beast AI, a friendly, witty and slightly playful assistant with a confident beast-like personality.\n"
-        f"- Current live time: {now_ist()}.\n"
-        f"{extra}"
-        "- NEVER use italics (*text* or _text_). Always keep text completely normal unless using **bold**.\n"
-        "- Use markdown formatting when helpful.\n"
-        "RULES: If the user says 'hi', say hello normally. Keep answers direct, warm and helpful."
-    )
-
-
-def fetch_json(url, payload=None, headers=None, timeout=18):
-    data = None if payload is None else json.dumps(payload).encode("utf-8")
-    req = urllib.request.Request(url, data=data, headers=headers or {})
-    with urllib.request.urlopen(req, timeout=timeout) as res:
-        text = res.read().decode("utf-8")
-        return json.loads(text) if text else {}
-
-
-def fetch_text(url, headers=None, timeout=18):
-    req = urllib.request.Request(url, headers=headers or {})
-    with urllib.request.urlopen(req, timeout=timeout) as res:
-        return res.read().decode("utf-8")
-
-
-def try_grok(system, history, message):
-    key = os.environ.get("GROK_API_KEY")
-    if not key:
-        return None
-    try:
-        messages = [{"role": "system", "content": system}]
-        for item in history[-10:]:
-            if item.get("message"):
-                messages.append({"role": "user" if item.get("type") == "user" else "assistant", "content": item.get("message")})
-        if message:
-            messages.append({"role": "user", "content": message})
-        data = fetch_json(
-            "https://api.x.ai/v1/chat/completions",
-            {"model": "grok-3-fast", "messages": messages, "temperature": 0.7},
-            {"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
-            timeout=20,
-        )
-        return data.get("choices", [{}])[0].get("message", {}).get("content")
-    except Exception:
-        return None
-
-
-def try_kira_flash(system, history, message):
-    key = os.environ.get("KIRA_FLASH_API_KEY")
-    if not key:
-        return None
-    try:
-        messages = [{"role": "system", "content": system}]
-        for item in history[-10:]:
-            if item.get("message"):
-                messages.append({"role": "user" if item.get("type") == "user" else "assistant", "content": item.get("message")})
-        if message:
-            messages.append({"role": "user", "content": message})
-        data = fetch_json(
-            "https://api.kira.ai/v1/chat/completions",
-            {"model": "kira-3.5-flash", "messages": messages, "temperature": 0.7},
-            {"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
-            timeout=16,
-        )
-        return data.get("choices", [{}])[0].get("message", {}).get("content")
-    except Exception:
-        return None
-
-
-def try_gemini(system, history, message, files):
-    keys = [
-        os.environ.get("GEMINI_API_KEY"),
-        os.environ.get("GEMINI_API_KEY_1"),
-        os.environ.get("GEMINI_API_KEY_2"),
-    ]
-    keys = [k for k in keys if k]
-    if not keys:
-        return None
-
-    contents = []
-    for item in history[-10:]:
-        if item.get("message"):
-            contents.append({
-                "role": "user" if item.get("type") == "user" else "model",
-                "parts": [{"text": item.get("message")}],
-            })
-
-    parts = []
-    if message:
-        parts.append({"text": message})
-    for f in files:
-        mime = f.get("mimeType", "image/jpeg")
-        data = f.get("data")
-        if data and (mime.startswith("image/") or mime == "application/pdf"):
-            parts.append({"inline_data": {"mime_type": mime, "data": data}})
-    if parts:
-        contents.append({"role": "user", "parts": parts})
-
-    keys = random.sample(keys, len(keys))
-    for model in GEMINI_MODELS:
-        for key in keys:
-            try:
-                data = fetch_json(
-                    f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}",
-                    {
-                        "system_instruction": {"parts": [{"text": system}]},
-                        "contents": contents,
-                        "generationConfig": {"temperature": 0.8, "maxOutputTokens": 4096},
-                    },
-                    {"Content-Type": "application/json"},
-                    timeout=20,
-                )
-                parts_out = data.get("candidates", [{}])[0].get("content", {}).get("parts", [])
-                text = "".join(part.get("text", "") for part in parts_out).strip()
-                if text:
-                    return text
-            except Exception:
-                continue
-    return None
-
-
-def try_pollinations_text(system, history, message):
-    convo = "\n".join(
-        [f"{'User' if item.get('type') == 'user' else 'Beast AI'}: {item.get('message', '')}" for item in history[-6:] if item.get("message")]
-    )
-    prompt = f"{convo}\nUser: {message}\nBeast AI:" if convo else message or "Say hello as Beast AI."
-    try:
-        url = (
-            "https://text.pollinations.ai/"
-            + urllib.parse.quote(prompt)
-            + "?system="
-            + urllib.parse.quote(system)
-        )
-        text = fetch_text(url, {"User-Agent": "BeastAI"}, timeout=16).strip()
-        return text or None
-    except Exception:
-        try:
-            req = urllib.request.Request(
-                "https://text.pollinations.ai/",
-                data=json.dumps({
-                    "messages": [
-                        {"role": "system", "content": system},
-                        {"role": "user", "content": prompt},
-                    ],
-                    "model": "openai",
-                }).encode("utf-8"),
-                headers={"Content-Type": "application/json"},
-            )
-            with urllib.request.urlopen(req, timeout=16) as res:
-                text = res.read().decode("utf-8").strip()
-                return text or None
-        except Exception:
-            return None
-
-
-def generate_image(prompt):
-    key = os.environ.get("KIRA_IMAGE_API_KEY")
-    if key:
-      try:
-        data = fetch_json(
-            "https://api.kira.ai/v1/images/generations",
-            {"model": "kira-3.0-image", "prompt": prompt, "n": 1},
-            {"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
-            timeout=20,
-        )
-        url = data.get("data", [{}])[0].get("url")
-        if url:
-            return url
-      except Exception:
-        pass
-    seed = random.randint(1, 999999)
-    return f"https://image.pollinations.ai/prompt/{urllib.parse.quote(prompt)}?nologo=true&seed={seed}&width=1024&height=1024&enhance=true"
-
-
-def generate_video(prompt, fast=False):
-    model = "kira-3.0-video-flash" if fast else "kira-3.0-video"
-    key = os.environ.get("KIRA_VIDEO_FLASH_API_KEY" if fast else "KIRA_VIDEO_API_KEY")
-    if not key:
-        return f"The Beast is missing the **{model}** key. Add `{ 'KIRA_VIDEO_FLASH_API_KEY' if fast else 'KIRA_VIDEO_API_KEY' }` to unleash moving pictures. Until then, my claws can only forge words and images."
-    try:
-        data = fetch_json(
-            "https://api.kira.ai/v1/videos/generations",
-            {"model": model, "prompt": prompt},
-            {"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
-            timeout=40,
-        )
-        return data.get("url") or data.get("data", [{}])[0].get("url") or "**Kira Video API Error:** the vault returned no footage."
-    except urllib.error.HTTPError as e:
-        return f"**Kira Video API Error:** `{e.read().decode('utf-8')}`"
-    except Exception as e:
-        return f"**System Intercept Error:** `{str(e)}`"
-
-
-@app.route("/")
+@app.route('/')
 def home():
-    return "Beast AI Core is Online (Vercel Serverless)! 🦖⚡"
+    return "Beast AI Core is Online (Vercel Serverless)! 🦖✨"
 
-
-@app.route("/api/chat", methods=["POST"])
+@app.route('/api/chat', methods=['POST'])
 def chat():
+    start_time = time.time()
     try:
-        body = request.get_json(silent=True) or {}
-        message = str(body.get("message", ""))
-        mode = str(body.get("mode", "chat"))
-        speed = str(body.get("speed", "normal"))
-        history = body.get("history", []) if isinstance(body.get("history", []), list) else []
-        files = body.get("files", []) if isinstance(body.get("files", []), list) else []
-        user_name = body.get("userName")
+        message = request.form.get("message", "")
+        mode = request.form.get("mode", "chat")
+        speed = request.form.get("speed", "normal")
+        files = request.files.getlist("files") if hasattr(request, 'files') else []
+        history_json = request.form.get("history", "[]")
+        
+        try: chat_history = json.loads(history_json)
+        except: chat_history = []
 
-        if not message.strip() and not files:
-            return jsonify({"reply": "The Beast hears only silence."}), 200
+        if not message and not files:
+            return jsonify({"reply": "The Beast hears only silence. 🤫"}), 200
 
-        if mode == "image":
-            return jsonify({"reply": f"![Manifested Image]({generate_image(message or 'a majestic beast')})"}), 200
+        ist = timezone(timedelta(hours=5, minutes=30))
+        live_time = datetime.now(ist).strftime("%A, %d %B %Y, %I:%M %p IST")
 
-        if mode in ["video", "video-fast"]:
-            return jsonify({"reply": generate_video(message, fast=(mode == "video-fast"))}), 200
+        # ==========================================
+        # 1. KIRA 3.0 IMAGE GENERATION 
+        # ==========================================
+        if mode == 'image':
+            img_key = os.environ.get("KIRA_IMAGE_API_KEY")
+            img_url = None
+            error_msg = ""
+            
+            if img_key:
+                try:
+                    # 🚀 FIXED: Points to Kira's correct VN domain
+                    url = "https://kiraai.vn/api/v1/images/generations"
+                    headers = {"Authorization": f"Bearer {img_key}", "Content-Type": "application/json"}
+                    payload = json.dumps({"model": "kira-3.0-image", "prompt": message, "n": 1}).encode('utf-8')
+                    req = urllib.request.Request(url, data=payload, headers=headers)
+                    with urllib.request.urlopen(req, timeout=15) as response:
+                        data = json.loads(response.read().decode('utf-8'))
+                        img_url = data['data'][0]['url']
+                except urllib.error.HTTPError as e:
+                    error_msg = f"Kira Image HTTP Error {e.code}: {e.read().decode('utf-8')}"
+                except Exception as e:
+                    error_msg = f"Kira Image Error: {str(e)}"
+            else:
+                error_msg = "KIRA_IMAGE_API_KEY is not set in Vercel."
 
-        system = system_instruction(user_name)
-        reply = None
-        if speed == "pro":
-            reply = try_grok(system, history, message) or try_gemini(system, history, message, files)
-        elif speed == "fast":
-            reply = try_kira_flash(system, history, message) or try_gemini(system, history, message, files)
+            if img_url:
+                return jsonify({"reply": f"![Manifested Image]({img_url})"}), 200
+            else:
+                # 🚀 THE RANDOM FALLBACK: Free Pollinations Image API if Kira breaks
+                seed = random.randint(1, 999999)
+                safe_prompt = urllib.parse.quote(message)
+                fallback_url = f"https://image.pollinations.ai/prompt/{safe_prompt}?nologo=true&seed={seed}"
+                return jsonify({"reply": f"![Manifested Image]({fallback_url})\n\n*(Note: Primary engine failed. Used free fallback. Reason: {error_msg})*"}), 200
+
+        # ==========================================
+        # 2. KIRA 3.0 VIDEO GENERATION
+        # ==========================================
+        elif mode in ['video', 'video-fast']:
+            is_fast = (mode == 'video-fast')
+            model_name = "kira-3.0-video-flash" if is_fast else "kira-3.0-video"
+            vid_key = os.environ.get("KIRA_VIDEO_FLASH_API_KEY") if is_fast else os.environ.get("KIRA_VIDEO_API_KEY")
+            
+            if not vid_key:
+                return jsonify({"reply": f"**Error:** The environment variable for {model_name} is missing. Please check your Vercel Environment Variables."}), 200
+            
+            try:
+                # 🚀 FIXED: Points to Kira's correct VN domain
+                url = "https://kiraai.vn/api/v1/videos/generations"
+                headers = {"Authorization": f"Bearer {vid_key}", "Content-Type": "application/json"}
+                payload = json.dumps({"model": model_name, "prompt": message}).encode('utf-8')
+                req = urllib.request.Request(url, data=payload, headers=headers)
+                with urllib.request.urlopen(req, timeout=30) as response:
+                    data = json.loads(response.read().decode('utf-8'))
+                    video_url = data.get('url') or data.get('data', [{}])[0].get('url', '')
+                    return jsonify({"reply": video_url}), 200
+            except urllib.error.HTTPError as e:
+                err_msg = e.read().decode('utf-8')
+                return jsonify({"reply": f"**Kira Video API Error {e.code}:** `{err_msg}`"}), 200
+            except Exception as e:
+                return jsonify({"reply": f"**System Intercept Error:** `{str(e)}`"}), 200
+
+        # ==========================================
+        # 3. TEXT & CODING GENERATION
+        # ==========================================
         else:
-            reply = try_gemini(system, history, message, files)
+            final_response_text = None
+            error_log = []
+            system_instruction = (
+                "You are Beast AI, a friendly and witty assistant. 🦖✨\n"
+                f"- Current live time: {live_time}.\n"
+                "- NEVER use italics (*text* or _text_). Always keep text completely normal unless using **bold**.\n"
+                "RULES: If the user says 'hi', say hello normally. Keep answers direct. Use emojis! 🚀🔥"
+            )
 
-        if not reply:
-            reply = try_pollinations_text(system, history, message) or "Beast AI core is currently recalibrating its sub-systems. Please fire your query again! ⚡"
+            # --- GROK 4.6 (PRO) ---
+            if speed == 'pro':
+                grok_key = os.environ.get("GROK_API_KEY")
+                if grok_key:
+                    try:
+                        messages_payload = [{"role": "system", "content": system_instruction}]
+                        for item in chat_history[-10:]:
+                            role = "user" if item.get("type") == "user" else "assistant"
+                            if item.get("message"): messages_payload.append({"role": role, "content": item.get("message")})
+                        if message: messages_payload.append({"role": "user", "content": message})
 
-        return jsonify({"reply": reply}), 200
+                        url = "https://api.x.ai/v1/chat/completions"
+                        headers = {"Authorization": f"Bearer {grok_key}", "Content-Type": "application/json"}
+                        payload = json.dumps({"model": "grok-beta", "messages": messages_payload}).encode('utf-8')
+                        req = urllib.request.Request(url, data=payload, headers=headers)
+                        with urllib.request.urlopen(req, timeout=9) as response:
+                            data = json.loads(response.read().decode('utf-8'))
+                            final_response_text = data['choices'][0]['message']['content']
+                    except urllib.error.HTTPError as e:
+                        error_log.append(f"Grok HTTP Error {e.code}: {e.read().decode('utf-8')}")
+                    except Exception as e:
+                        error_log.append(f"Grok Error: {str(e)}")
+                else:
+                    error_log.append("GROK_API_KEY is not set.")
+
+            # --- KIRA 3.5 FLASH (FAST) ---
+            elif speed == 'fast':
+                flash_key = os.environ.get("KIRA_FLASH_API_KEY")
+                if flash_key:
+                    try:
+                        messages_payload = [{"role": "system", "content": system_instruction}]
+                        for item in chat_history[-10:]:
+                            role = "user" if item.get("type") == "user" else "assistant"
+                            if item.get("message"): messages_payload.append({"role": role, "content": item.get("message")})
+                        if message: messages_payload.append({"role": "user", "content": message})
+
+                        # 🚀 FIXED: Points to Kira's correct VN domain
+                        url = "https://kiraai.vn/api/v1/chat/completions"
+                        headers = {"Authorization": f"Bearer {flash_key}", "Content-Type": "application/json"}
+                        payload = json.dumps({"model": "kira-3.5-flash", "messages": messages_payload}).encode('utf-8')
+                        req = urllib.request.Request(url, data=payload, headers=headers)
+                        with urllib.request.urlopen(req, timeout=8) as response:
+                            data = json.loads(response.read().decode('utf-8'))
+                            final_response_text = data['choices'][0]['message']['content']
+                    except urllib.error.HTTPError as e:
+                        error_log.append(f"Kira Flash HTTP Error {e.code}: {e.read().decode('utf-8')}")
+                    except Exception as e:
+                        error_log.append(f"Kira Flash Error: {str(e)}")
+                else:
+                    error_log.append("KIRA_FLASH_API_KEY is not set.")
+
+            # --- GEMINI 3.5 FLASH (NORMAL) ---
+            if not final_response_text and valid_keys:
+                keys_to_try = list(valid_keys)
+                random.shuffle(keys_to_try)
+                for key in keys_to_try:
+                    if final_response_text or (time.time() - start_time > 8.5): break 
+                    try:
+                        client = genai.Client(api_key=key)
+                        google_contents = []
+                        for item in chat_history[-10:]:
+                            role = "user" if item.get("type") == "user" else "model"
+                            if item.get("message"): google_contents.append(types.Content(role=role, parts=[types.Part.from_text(text=item.get("message"))]))
+                        
+                        current_parts = []
+                        if message: current_parts.append(types.Part.from_text(text=message))
+                        if files:
+                            for f in files: current_parts.append(types.Part.from_bytes(data=f.read(), mime_type=f.content_type))
+                        if current_parts: google_contents.append(types.Content(role="user", parts=current_parts))
+
+                        response = client.models.generate_content(
+                            model='gemini-1.5-flash', 
+                            contents=google_contents,
+                            config=types.GenerateContentConfig(system_instruction=system_instruction)
+                        )
+                        if response.text:
+                            final_response_text = response.text
+                            break
+                    except Exception as e:
+                        if "safety" in str(e).lower(): return jsonify({"reply": "The Beast safety shields blocked this request! 🛡✨"}), 200
+                        error_log.append(f"Gemini Error: {str(e)}")
+                        continue 
+            elif not final_response_text and not valid_keys:
+                error_log.append("No valid Gemini API keys found.")
+
+            # 🚀 THE RANDOM FALLBACK: Free Pollinations Text API
+            # This completely removes the "recalibrating" message. If all your keys are broken, it answers for free anyway.
+            if not final_response_text:
+                try:
+                    safe_prompt = urllib.parse.quote(message)
+                    url = f"https://text.pollinations.ai/{safe_prompt}?system={urllib.parse.quote(system_instruction)}"
+                    req = urllib.request.Request(url, headers={'User-Agent': 'BeastAI'})
+                    with urllib.request.urlopen(req, timeout=10) as response:
+                        fallback_text = response.read().decode('utf-8')
+                        errors_str = " | ".join(error_log)
+                        final_response_text = f"{fallback_text}\n\n*(Note: Primary engines failed. Used fallback. Errors: {errors_str})*"
+                except Exception as e:
+                    errors_str = " | ".join(error_log)
+                    final_response_text = f"**System Failure.** All primary APIs failed, and the fallback API also failed.\n\n**Errors:**\n{errors_str}\nFallback Error: {str(e)}"
+
+            return jsonify({"reply": final_response_text}), 200
+
     except Exception as e:
         return jsonify({"reply": f"**System Intercept Error:** `{str(e)}`"}), 200
