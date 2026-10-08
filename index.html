@@ -35,22 +35,37 @@
         body.dark #aurora-container { opacity: 1; }
         .pb-safe { padding-bottom: max(16px, env(safe-area-inset-bottom)); }
         .pt-safe { padding-top: max(12px, env(safe-area-inset-top)); }
-        #scroll-container { scrollbar-gutter: stable both-edges; }
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background-color: rgba(0,0,0,0.2); border-radius: 4px; }
         body.dark .custom-scrollbar::-webkit-scrollbar-thumb { background-color: rgba(255,255,255,0.2); }
         .sidebar-scroll::-webkit-scrollbar { display: none; }
         .sidebar-scroll { -ms-overflow-style: none; scrollbar-width: none; overflow-x: auto; }
+        
         .jumping-dots span { display: inline-block; width: 8px; height: 8px; background-color: currentColor; border-radius: 50%; margin: 0 2px; animation: jump 1.2s infinite ease-in-out both; }
         .jumping-dots span:nth-child(1) { animation-delay: -0.32s; }
         .jumping-dots span:nth-child(2) { animation-delay: -0.16s; }
         @keyframes jump { 0%, 80%, 100% { transform: scale(0); opacity: 0.3; } 40% { transform: scale(1); opacity: 1; } }
+        
+        /* 🚀 NEW ANIMATIONS */
+        @keyframes slideFadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-msg { animation: slideFadeUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        
+        @keyframes textReveal {
+            from { opacity: 0; filter: blur(4px); }
+            to { opacity: 1; filter: blur(0); }
+        }
+        .text-reveal { animation: textReveal 0.5s ease-out forwards; }
+        
         .prose, .prose p, .prose li, .prose span, .prose a { font-weight: 500 !important; -webkit-user-select: text; user-select: text; }
         .prose strong, .prose b { font-weight: 800 !important; color: inherit; }
         .prose em, .prose i { font-style: normal !important; font-weight: 800 !important; color: inherit; }
         .prose p { margin-top: 0.4em; margin-bottom: 0.4em; }
         .prose ul > li::marker { color: #6b7280; font-size: 1.2em; }
         body.dark .prose ul > li::marker { color: #a1a1aa !important; }
+        
         .desktop-sidebar { width: 68px; overflow-x: hidden; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         .desktop-sidebar:hover:not(.locked) { width: 16rem; }
         .desktop-sidebar.locked { width: 16rem; }
@@ -60,8 +75,16 @@
         .sidebar-icon { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
         .desktop-sidebar .nav-text { opacity: 0; transition: opacity 0.2s ease; white-space: nowrap; }
         .desktop-sidebar:hover:not(.locked) .nav-text, .desktop-sidebar.locked .nav-text { opacity: 1; transition-delay: 0.1s; }
-        .main-content-shift, .pill-wrapper { margin-left: 0; transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        @media (min-width: 1024px) { .main-content-shift, .pill-wrapper { margin-left: 68px; } .main-content-shift.locked, .pill-wrapper.locked { margin-left: 16rem; } }
+        
+        /* 🚀 FIXED: PERFECT CENTERING CSS */
+        .main-content-shift { margin-left: 0; transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .pill-wrapper { left: 0; transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        @media (min-width: 1024px) { 
+            .main-content-shift { margin-left: 68px; } 
+            .main-content-shift.locked { margin-left: 16rem; } 
+            .pill-wrapper { left: 68px; }
+            .pill-wrapper.locked { left: 16rem; }
+        }
     </style>
 </head>
 <body class="flex h-[100dvh] w-full text-base">
@@ -145,13 +168,13 @@
                     <img src="/beast_ai.png" class="w-16 h-16 sm:w-20 sm:h-20 mb-6 object-cover rounded-full shadow-lg shadow-black/10 dark:shadow-white/5 animate-pulse bg-black" alt="Beast AI">
                     <h2 id="greeting-text" class="text-3xl sm:text-4xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 pb-2 drop-shadow-md"></h2>
                 </div>
-                <!-- 🚀 Restored py-4 for proper spacing -->
                 <div id="chat-box" class="w-full space-y-2 hidden flex-col pb-10 py-4"></div>
             </div>
         </main>
     </div>
 
-    <div id="pill-wrapper" class="pill-wrapper fixed bottom-0 left-0 right-0 z-30 pb-safe pointer-events-none">
+    <!-- 🚀 FIXED PILL WRAPPER: Perfectly bounds to remaining screen width for true mx-auto centering -->
+    <div id="pill-wrapper" class="pill-wrapper fixed bottom-0 right-0 z-30 pb-safe pointer-events-none">
         <div class="max-w-3xl mx-auto px-3 sm:px-4 pb-2 pt-4 pointer-events-auto">
             
             <div id="attachment-preview" class="hidden relative ml-4 mb-3 flex gap-2 overflow-x-auto custom-scrollbar max-w-full"></div>
@@ -220,7 +243,6 @@
         let currentMode = 'chat'; let currentSpeed = 'normal'; let attachedFiles = []; let currentSessionId = null;
         let userName = localStorage.getItem('beast-username'); let isDesktopSidebarLocked = localStorage.getItem('beast-sidebar-locked') === 'true';
 
-        // Media Parser: Renders raw mp4 links into inline HTML5 video players
         function processMedia(text) {
             if (!text) return "";
             return text.replace(/(?:!\[.*?\]\()?(https?:\/\/[^\s)]+\.mp4)(?:\))?/gi, '\n\n<video src="$1" controls autoplay loop playsinline class="w-full rounded-xl shadow-md my-3 border border-black/5 dark:border-white/10"></video>\n\n');
@@ -297,7 +319,9 @@
         }
 
         window.onload = () => { 
-            // VERCEL FETCH WAKEUP
+            // 🚀 VERCEL WAKEUP PING
+            fetch('/api/chat').catch(() => {});
+            
             if(localStorage.getItem('beast-theme') === 'dark') document.body.classList.add('dark'); else if (localStorage.getItem('beast-theme') === 'light') document.body.classList.remove('dark');
             const isDark = document.body.classList.contains('dark');
             document.getElementById('theme-icon-desktop').setAttribute('data-lucide', isDark ? 'sun' : 'moon'); document.getElementById('theme-text-desktop').innerText = isDark ? 'Light Mode' : 'Dark Mode'; 
@@ -340,8 +364,8 @@
             
             const currentFilesSnapshot = attachedFiles.map(f => ({ name: f.name, isPdf: f.isPdf, preview: f.preview }));
             
-            // 🚀 RESTORED mb-6 FOR CHAT BUBBLE SPACING
-            let userHtml = `<div class="flex justify-end w-full mb-6"><div class="bg-white/90 dark:bg-zinc-800/90 backdrop-blur-md text-zinc-900 dark:text-zinc-100 px-5 py-3 rounded-[1.5rem] rounded-tr-sm max-w-[85%] text-[15px] sm:text-base leading-relaxed shadow-sm border border-black/5 dark:border-white/10">`;
+            // 🚀 FIXED: Added "animate-msg" class for smooth pop-in
+            let userHtml = `<div class="flex justify-end w-full mb-6 animate-msg"><div class="bg-white/90 dark:bg-zinc-800/90 backdrop-blur-md text-zinc-900 dark:text-zinc-100 px-5 py-3 rounded-[1.5rem] rounded-tr-sm max-w-[85%] text-[15px] sm:text-base leading-relaxed shadow-sm border border-black/5 dark:border-white/10">`;
             
             if (currentFilesSnapshot.length > 0) { 
                 userHtml += `<div class="flex flex-wrap gap-2 justify-end mb-2">`; 
@@ -358,8 +382,8 @@
             const msgId = Date.now();
             let loaderHTML = `<div id="loader-${msgId}" class="pl-[2.7rem] sm:pl-[3.2rem]"><div class="jumping-dots text-zinc-500 dark:text-zinc-400 py-2"><span></span><span></span><span></span></div></div>`; 
             
-            // 🚀 RESTORED mb-6 FOR BEAST BUBBLE SPACING
-            const beastHtml = `<div id="beast-wrap-${msgId}" class="flex flex-col items-start w-full max-w-[90%] mb-6"><div class="flex items-center gap-3 mb-2"><img src="/beast_ai.png" class="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover shadow-sm bg-black"><span class="text-[13px] font-bold text-zinc-900 dark:text-zinc-100 uppercase tracking-wide drop-shadow-md">Beast AI</span></div>${loaderHTML}<div id="beast-box-${msgId}" class="pl-[2.7rem] sm:pl-[3.2rem] w-full hidden"><div class="prose dark:prose-invert prose-sm sm:prose-base leading-relaxed break-words w-full max-w-none text-zinc-900 dark:text-zinc-100"></div></div></div>`;
+            // 🚀 FIXED: Added "animate-msg" class to Beast's container
+            const beastHtml = `<div id="beast-wrap-${msgId}" class="flex flex-col items-start w-full max-w-[90%] mb-6 animate-msg"><div class="flex items-center gap-3 mb-2"><img src="/beast_ai.png" class="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover shadow-sm bg-black"><span class="text-[13px] font-bold text-zinc-900 dark:text-zinc-100 uppercase tracking-wide drop-shadow-md">Beast AI</span></div>${loaderHTML}<div id="beast-box-${msgId}" class="pl-[2.7rem] sm:pl-[3.2rem] w-full hidden"><div class="prose dark:prose-invert prose-sm sm:prose-base leading-relaxed break-words w-full max-w-none text-zinc-900 dark:text-zinc-100"></div></div></div>`;
             chatBox.insertAdjacentHTML('beforeend', beastHtml); 
             lucide.createIcons(); 
             document.getElementById('scroll-container').scrollTop = document.getElementById('scroll-container').scrollHeight;
@@ -376,11 +400,9 @@
             clearAllAttachments();
 
             try {
-                // 🚀 VERCEL FETCH: Uses relative URL
+                // 🚀 VERCEL FETCH
                 const res = await fetch('/api/chat', { method: 'POST', body: formData });
-                const raw = await res.text();
-                let data;
-                try { data = JSON.parse(raw); } catch (_) { data = { reply: `**Server problem (HTTP ${res.status}).** The backend did not return valid JSON: ${raw.replace(/<[^>]*>/g, ' ').trim().slice(0, 200)}` }; }
+                const data = await res.json();
                 const loader = document.getElementById(`loader-${msgId}`); 
                 const targetBoxWrap = document.getElementById(`beast-box-${msgId}`); 
                 const targetBox = targetBoxWrap.querySelector('.prose');
@@ -389,6 +411,10 @@
                 loader.style.display = 'none'; 
                 targetBoxWrap.classList.remove('hidden'); 
                 targetBox.innerHTML = marked.parse(processMedia(replyText)); 
+                
+                // 🚀 FIXED: Added beautiful blur text-reveal animation upon load
+                targetBox.classList.add('text-reveal');
+                
                 targetBox.querySelectorAll('pre').forEach(pre => pre.classList.add('bg-[#1e1e20]/90', 'backdrop-blur-md', 'text-zinc-100', 'p-4', 'rounded-xl', 'overflow-x-auto', 'my-4', 'border', 'border-zinc-800'));
                 
                 lucide.createIcons(); 
@@ -398,7 +424,7 @@
                 document.getElementById(`loader-${msgId}`).style.display = 'none'; 
                 const targetBoxWrap = document.getElementById(`beast-box-${msgId}`); 
                 targetBoxWrap.classList.remove('hidden'); 
-                targetBoxWrap.querySelector('.prose').innerHTML = marked.parse("The connection was severed! ⚡😵 (" + e.message + ") Check your Vercel deployment logs and environment variables."); 
+                targetBoxWrap.querySelector('.prose').innerHTML = marked.parse("The connection was severed! ⚡😵"); 
             }
             lucide.createIcons(); 
             document.getElementById('send-btn').disabled = false; 
@@ -410,7 +436,6 @@
         function appendHistoryMessage(m) { 
             const chatBox = document.getElementById('chat-box'); 
             if (m.type === 'user') { 
-                // 🚀 RESTORED mb-6
                 let inner = `<div class="flex justify-end w-full mb-6"><div class="bg-white/90 dark:bg-zinc-800/90 backdrop-blur-md text-zinc-900 dark:text-zinc-100 px-5 py-3 rounded-[1.5rem] rounded-tr-sm max-w-[85%] text-[15px] sm:text-base leading-relaxed shadow-sm border border-black/5 dark:border-white/10">`; 
                 if (m.files && m.files.length > 0) { 
                     inner += `<div class="flex flex-wrap gap-2 justify-end mb-2">`; 
@@ -424,7 +449,6 @@
                 chatBox.insertAdjacentHTML('beforeend', inner + `</div></div>`); 
             } else { 
                 let contentHtml = marked.parse(processMedia(m.message)); 
-                // 🚀 RESTORED mb-6
                 const html = `<div class="flex flex-col items-start w-full max-w-[90%] mb-6"><div class="flex items-center gap-3 mb-2"><img src="/beast_ai.png" class="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover shadow-sm bg-black"><span class="text-[13px] font-bold text-zinc-900 dark:text-zinc-100 uppercase tracking-wide drop-shadow-md">Beast AI</span></div><div class="pl-[2.7rem] sm:pl-[3.2rem] w-full"><div class="prose dark:prose-invert prose-sm sm:prose-base leading-relaxed break-words w-full max-w-none text-zinc-900 dark:text-zinc-100">${contentHtml}</div></div></div>`; 
                 chatBox.insertAdjacentHTML('beforeend', html); 
                 chatBox.querySelectorAll('pre').forEach(pre => pre.classList.add('bg-[#1e1e20]/90', 'backdrop-blur-md', 'text-zinc-100', 'p-4', 'rounded-xl', 'overflow-x-auto', 'my-4', 'border', 'border-zinc-800')); 
