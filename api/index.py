@@ -60,19 +60,137 @@ CLOUDFLARE_API_TOKEN = os.environ.get("CLOUDFLARE_API_TOKEN", "").strip()
 CLOUDFLARE_IMAGE_MODEL = os.environ.get(
     "CLOUDFLARE_IMAGE_MODEL", "@cf/black-forest-labs/flux-1-schnell"
 ).strip()
-# JSON2Video renders compositions; Beast AI uses it for a short animated
-# still-image clip (Cloudflare-generated image + zoom + caption), not native
-# AI-generated motion. Store this key only in hosting environment variables.
-JSON2VIDEO_API_KEY = os.environ.get("JSON2VIDEO_API_KEY", "").strip()
+# Video generation uses API Pass exclusively. Keep this key in deployment secrets,
+# never in index.html or any client-side JavaScript.
+APIPASS_API_KEY = os.environ.get("APIPASS_API_KEY", "").strip()
+APIPASS_BASE_URL = os.environ.get("APIPASS_BASE_URL", "https://api.apipass.dev/api/v1").strip().rstrip("/")
+APIPASS_CHANNEL = os.environ.get("APIPASS_CHANNEL", "auto").strip().lower()
+if APIPASS_CHANNEL not in {"auto", "starter", "regular", "official"}:
+    APIPASS_CHANNEL = "auto"
 
-# fal.ai is retained for optional video generation only. Leave ENABLE_FAL_VIDEO
-# unset for the free image-only configuration; set it to true only if video
-# billing/credits are available in your fal.ai account.
-FAL_KEY = (os.environ.get("FAL_API_KEY", "").strip() or os.environ.get("FAL_KEY", "").strip())
-FAL_IMAGE_MODEL = os.environ.get("FAL_IMAGE_MODEL", "fal-ai/nano-banana-2").strip()
-FAL_VIDEO_MODEL = os.environ.get("FAL_VIDEO_MODEL", "fal-ai/kling-video/v3/standard/text-to-video").strip()
-FAL_VIDEO_FAST_MODEL = os.environ.get("FAL_VIDEO_FAST_MODEL", "fal-ai/ltx-2.3/text-to-video/fast").strip()
-ENABLE_FAL_VIDEO = os.environ.get("ENABLE_FAL_VIDEO", "false").strip().lower() in {"1", "true", "yes", "on"}
+APIPASS_VEO_QUALITY_MODEL = "google/veo-3-1-quality"
+APIPASS_VEO_FAST_MODEL = "google/veo-3-1-fast"
+APIPASS_VIDEO_RESOLUTION = "1080p"
+# Veo 3.1 requires 8 seconds when requesting 1080p output.
+APIPASS_VIDEO_DURATION = "8"
+
+
+def _apipass_http_json(path: str, method: str = "GET", payload: dict[str, Any] | None = None, timeout: int = 25) -> dict[str, Any]:
+    """Call API Pass with a server-side Bearer token."""
+    if not APIPASS_API_KEY:
+        raise RuntimeError("APIPASS_API_KEY is missing from this deployment's environment variables. 🔑")
+    body = json.dumps(payload).encode("utf-8") if payload is not None else None
+    headers = {
+        "Authorization": f"Bearer {APIPASS_API_KEY}",
+        "Accept": "application/json",
+        "User-Agent": USER_AGENT,
+    }
+    if payload is not None:
+        headers["Content-Type"] = "application/json"
+    url = APIPASS_BASE_URL + "/" + path.lstrip("/")
+    req = urllib.request.Request(url, data=body, headers=headers, method=method)
+    with urllib.request.urlopen(req, timeout=timeout) as response:
+        raw = response.read().decode("utf-8", errors="replace")
+        try:
+            parsed = json.loads(raw)
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"API Pass returned a non-JSON response (HTTP {response.status}).") from exc
+    if not isinstance(parsed, dict):
+        raise ValueError("API Pass returned an unexpected response format.")
+    api_code = parsed.get("code")
+    if api_code not in (None, 200, "200") or parsed.get("success") is False:
+        detail = parsed.get("message") or parsed.get("error") or "request rejected"
+        raise RuntimeError(f"API Pass rejected the request ({api_code}): {str(detail)[:900]}")
+    return parsed
+
+
+def _start_apipass_video(prompt: str, mode: str):
+    """Submit a 1080p, 8-second Veo 3.1 quality or Fast job."""
+    if not APIPASS_API_KEY:
+        return jsonify({
+            "reply": "Video generation is not configured yet. Add APIPASS_API_KEY to the hosting environment and redeploy. 🔑",
+            "error": True,
+        }), 200
+    clean_prompt = prompt.strip()[:4000]
+    if not clean_prompt:
+        return jsonify({"reply": "Describe the video you want to create. 🎬", "error": True}), 200
+
+    fast_mode = mode == "video-fast"
+    model = APIPASS_VEO_FAST_MODEL if fast_mode else APIPASS_VEO_QUALITY_MODEL
+    payload = {
+        "model": model,
+        "channel": APIPASS_CHANNEL,
+        "input": {
+            "prompt": clean_prompt,
+            "aspect_ratio": "LANDSCAPE",
+            "video_generate_type": "text_to_video",
+            "duration": APIPASS_VIDEO_DURATION,
+            "resolution": APIPASS_VIDEO_RESOLUTION,
+        },
+    }
+    try:
+        submitted = _apipass_http_json("jobs/createTask", method="POST", payload=payload, timeout=30)
+        data = submitted.get("data") if isinstance(submitted.get("data"), dict) else {}
+        task_id = data.get("taskId") or submitted.get("taskId")
+        if not isinstance(task_id, str) or not task_id.strip():
+            raise RuntimeError("API Pass did not return a taskId. Check the API Pass response and account credits.")
+        label = "Veo 3.1 Fast" if fast_mode else "Veo 3.1 Quality"
+        return jsonify({
+            "media_pending": True,
+            "request_id": task_id,
+            "provider": "APIPASS",
+            "mode": mode,
+            "media_type": "video",
+            "reply": f"Generating with Google {label} at 1080p (8 seconds). This can take a few minutes… 🎬",
+        }), 202
+    except Exception as exc:
+        app.logger.exception("API Pass video submission failed")
+        detail = _provider_error(exc, "API Pass") if isinstance(exc, (urllib.error.HTTPError, urllib.error.URLError)) else str(exc)
+        return jsonify({"reply": f"Video generation could not start: {detail[:900]} ⚠️", "error": True}), 200
+
+
+def _poll_apipass_video(task_id: str):
+    """Poll API Pass and return the generated MP4 URL when the task finishes."""
+    if not APIPASS_API_KEY:
+        return jsonify({"reply": "APIPASS_API_KEY is missing from the hosting environment. 🔑", "error": True}), 200
+    if not isinstance(task_id, str) or not re.fullmatch(r"[A-Za-z0-9_.:-]{1,180}", task_id):
+        return jsonify({"reply": "The API Pass task ID is invalid. Start a new video generation. ⚠️", "error": True}), 400
+    try:
+        encoded_id = urllib.parse.quote(task_id, safe="")
+        response_data = _apipass_http_json(f"jobs/recordInfo?taskId={encoded_id}", method="GET", timeout=25)
+        data = response_data.get("data") if isinstance(response_data.get("data"), dict) else response_data
+        state = str(data.get("state") or data.get("status") or "").strip().lower()
+        result_obj = data.get("resultJson") or data.get("result") or data.get("output")
+        if isinstance(result_obj, str):
+            try:
+                result_obj = json.loads(result_obj)
+            except json.JSONDecodeError:
+                result_obj = {"url": result_obj} if result_obj.startswith(("https://", "http://")) else {}
+
+        if state in {"success", "succeeded", "completed", "complete", "done"}:
+            video_url = _find_media_url(result_obj) or _find_media_url(data.get("resultUrls")) or _find_media_url(data)
+            if not isinstance(video_url, str) or not video_url.startswith("https://"):
+                return jsonify({"reply": "API Pass marked this job complete but did not return a secure video URL. ⚠️", "error": True}), 200
+            return _media_response("video", video_url, "API Pass · Google Veo 3.1", "🎬 Generated with Google Veo 3.1 at 1080p, 8 seconds.")
+
+        if state in {"fail", "failed", "failure", "error", "cancelled", "canceled"}:
+            detail = data.get("failMsg") or data.get("message") or data.get("failCode") or "The provider could not complete this video."
+            return jsonify({"reply": f"API Pass video generation failed: {str(detail)[:900]} ⚠️", "error": True}), 200
+
+        return jsonify({
+            "media_pending": True,
+            "request_id": task_id,
+            "provider": "APIPASS",
+            "mode": "video",
+            "media_type": "video",
+            "queue_status": state or "processing",
+            "reply": "Google Veo 3.1 is generating your 1080p video… 🎬",
+        }), 200
+    except Exception as exc:
+        detail = _provider_error(exc, "API Pass status") if isinstance(exc, (urllib.error.HTTPError, urllib.error.URLError)) else str(exc)
+        return jsonify({"reply": f"Could not check API Pass video status: {detail[:900]} ⚠️", "error": True}), 200
+
+
 
 USER_AGENT = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -252,11 +370,11 @@ def _find_media_url(payload: Any) -> str | None:
         return None
     if not isinstance(payload, dict):
         return None
-    for key in ("url", "image_url", "video_url", "output_url", "download_url", "uri"):
+    for key in ("url", "image_url", "video_url", "videoUrl", "output_url", "download_url", "uri"):
         value = payload.get(key)
         if isinstance(value, str) and value.strip().startswith(("https://", "http://")):
             return value.strip()
-    for key in ("data", "image", "images", "video", "videos", "output", "outputs", "result", "results", "artifacts"):
+    for key in ("data", "image", "images", "video", "videos", "output", "outputs", "result", "results", "resultUrls", "result_urls", "artifacts"):
         if key in payload:
             result = _find_media_url(payload[key])
             if result:
@@ -395,291 +513,6 @@ def cloudflare_media_image():
         message = _provider_error(exc, "Cloudflare Workers AI") if isinstance(exc, (urllib.error.HTTPError, urllib.error.URLError)) else str(exc)
         return app.response_class(_image_error_svg(message), status=200, mimetype="image/svg+xml", headers={"Cache-Control": "no-store"})
 
-
-def _json2video_http_json(url: str, method: str = "GET", payload: dict[str, Any] | None = None, timeout: int = 30) -> dict[str, Any]:
-    """Call the JSON2Video API using its x-api-key header."""
-    if not JSON2VIDEO_API_KEY:
-        raise RuntimeError("Add JSON2VIDEO_API_KEY in the hosting environment to enable video rendering. 🔑")
-    body = json.dumps(payload).encode("utf-8") if payload is not None else None
-    headers = {
-        "x-api-key": JSON2VIDEO_API_KEY,
-        "Accept": "application/json",
-        "User-Agent": USER_AGENT,
-    }
-    if payload is not None:
-        headers["Content-Type"] = "application/json"
-    req = urllib.request.Request(url, data=body, headers=headers, method=method)
-    with urllib.request.urlopen(req, timeout=timeout) as response:
-        raw = response.read().decode("utf-8", errors="replace")
-        try:
-            parsed = json.loads(raw)
-        except json.JSONDecodeError as exc:
-            raise ValueError(f"JSON2Video returned non-JSON response (HTTP {response.status}).") from exc
-        if not isinstance(parsed, dict):
-            raise ValueError("JSON2Video returned an unexpected response format.")
-        if parsed.get("success") is False:
-            raise RuntimeError(str(parsed.get("message") or parsed.get("error") or "JSON2Video request failed.")[:900])
-        return parsed
-
-
-def _start_json2video_clip(prompt: str, mode: str):
-    """Build a short video clip using a generated still image, zoom keyframes and a caption.
-
-    JSON2Video is a rendering/composition API, not a text-to-video AI model. This
-    path explicitly creates an animated still clip; it does not invent motion frames.
-    """
-    if not JSON2VIDEO_API_KEY:
-        return jsonify({
-            "reply": "Video rendering is not configured. Add JSON2VIDEO_API_KEY to Vercel and Render, then redeploy. 🎬",
-            "error": True,
-        }), 200
-    if not CLOUDFLARE_ACCOUNT_ID or not CLOUDFLARE_API_TOKEN:
-        return jsonify({
-            "reply": "This free video-rendering workflow first creates a key image. Add CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN as well as JSON2VIDEO_API_KEY. 🔑",
-            "error": True,
-        }), 200
-    clean_prompt = prompt.strip()[:1600]
-    if not clean_prompt:
-        return jsonify({"reply": "Describe the clip you want to create. 🎬", "error": True}), 200
-    try:
-        image_prompt = (
-            clean_prompt + ". Single cinematic establishing frame, landscape 16:9 composition, "
-            "no captions, no lettering, no logos, visually detailed."
-        )[:2048]
-        image_bytes, mime_type = _cloudflare_image_bytes(image_prompt)
-        extension = "png" if "png" in mime_type else "jpg"
-        filename = f"beast-ai-{int(time.time())}-{random.randint(1000, 999999)}.{extension}"
-        media_meta = _json2video_http_json(
-            "https://api.json2video.com/v2/media/file",
-            method="POST",
-            payload={
-                "name": filename,
-                "contentType": mime_type,
-                "size": len(image_bytes),
-                "folder": "temp",
-            },
-            timeout=25,
-        )
-        upload_url = media_meta.get("uploadUrl")
-        file_url = media_meta.get("fileUrl")
-        if not isinstance(upload_url, str) or not upload_url.startswith("https://") or not isinstance(file_url, str) or not file_url.startswith("https://"):
-            raise RuntimeError("JSON2Video did not return usable uploadUrl and fileUrl values.")
-        put_req = urllib.request.Request(
-            upload_url,
-            data=image_bytes,
-            headers={"Content-Type": mime_type, "User-Agent": USER_AGENT},
-            method="PUT",
-        )
-        with urllib.request.urlopen(put_req, timeout=35) as put_response:
-            if put_response.status not in (200, 201, 204):
-                raise RuntimeError(f"JSON2Video media upload failed (HTTP {put_response.status}).")
-
-        duration = 4 if mode == "video-fast" else 6
-        caption = clean_prompt[:105]
-        movie = {
-            "resolution": "hd",
-            "fps": 25,
-            "cache": False,
-            "client-data": {"app": "Beast AI", "kind": "animated-still-clip", "mode": mode},
-            "scenes": [{
-                "duration": duration,
-                "background-color": "#080808",
-                "elements": [
-                    {
-                        "type": "image",
-                        "src": file_url,
-                        "duration": duration,
-                        "resize": "cover",
-                        "keyframes": [
-                            {"time": 0, "zoom": 0},
-                            {"time": duration, "zoom": 1, "easing": "ease-in-out-sine"},
-                        ],
-                    },
-                    {
-                        "type": "text",
-                        "text": caption,
-                        "duration": duration,
-                        "settings": {
-                            "font-family": "Montserrat",
-                            "font-size": "34px",
-                            "font-weight": "700",
-                            "color": "#FFFFFF",
-                            "text-align": "center",
-                            "vertical-position": "bottom",
-                            "horizontal-position": "center",
-                            "padding": "24px",
-                            "text-shadow": "2px 2px 8px rgba(0,0,0,0.8)",
-                        },
-                    },
-                ],
-            }],
-        }
-        submitted = _json2video_http_json(
-            "https://api.json2video.com/v2/movies",
-            method="POST",
-            payload=movie,
-            timeout=25,
-        )
-        project_id = submitted.get("project")
-        if not isinstance(project_id, str) or not project_id.strip():
-            raise RuntimeError("JSON2Video did not return a render project ID.")
-        return jsonify({
-            "media_pending": True,
-            "request_id": project_id,
-            "provider": "JSON2Video",
-            "mode": mode,
-            "media_type": "video",
-            "reply": "Your clip is rendering: a Cloudflare-generated image with a slow zoom and caption. JSON2Video renders the clip; it does not generate new motion from the prompt. 🎬",
-        }), 202
-    except Exception as exc:
-        app.logger.exception("JSON2Video clip submission failed")
-        detail = _provider_error(exc, "JSON2Video") if isinstance(exc, (urllib.error.HTTPError, urllib.error.URLError)) else str(exc)
-        return jsonify({"reply": f"Video rendering failed: {detail[:900]} ⚠️", "error": True}), 200
-
-
-def _poll_json2video_clip(project_id: str):
-    if not JSON2VIDEO_API_KEY:
-        return jsonify({"reply": "JSON2VIDEO_API_KEY is missing from the hosting environment. 🔑", "error": True}), 200
-    if not isinstance(project_id, str) or not re.fullmatch(r"[A-Za-z0-9_-]{8,80}", project_id):
-        return jsonify({"reply": "The JSON2Video project ID is invalid. Start a new clip. ⚠️", "error": True}), 400
-    try:
-        encoded_id = urllib.parse.quote(project_id, safe="")
-        status_data = _json2video_http_json(
-            f"https://api.json2video.com/v2/movies?project={encoded_id}&format=simple",
-            method="GET",
-            timeout=20,
-        )
-        movie = status_data.get("movie") if isinstance(status_data.get("movie"), dict) else {}
-        status = str(movie.get("status", "pending")).lower()
-        if status == "done":
-            video_url = movie.get("url")
-            if isinstance(video_url, str) and video_url.startswith("https://"):
-                return _media_response(
-                    "video", video_url, "JSON2Video",
-                    "🎬 This is a short animated clip made from a generated still image (zoom + caption), not frame-by-frame AI text-to-video.",
-                )
-            return jsonify({"reply": "JSON2Video completed the render but returned no video URL. ⚠️", "error": True}), 200
-        if status in {"error", "timeout"}:
-            detail = movie.get("message") or f"JSON2Video render status: {status}"
-            return jsonify({"reply": f"JSON2Video render failed: {str(detail)[:900]} ⚠️", "error": True}), 200
-        return jsonify({
-            "media_pending": True,
-            "request_id": project_id,
-            "provider": "JSON2Video",
-            "mode": "video",
-            "media_type": "video",
-            "queue_status": status,
-            "reply": "Rendering your clip… 🎬",
-        }), 200
-    except Exception as exc:
-        detail = _provider_error(exc, "JSON2Video status") if isinstance(exc, (urllib.error.HTTPError, urllib.error.URLError)) else str(exc)
-        return jsonify({"reply": f"Could not check JSON2Video status: {detail[:900]} ⚠️", "error": True}), 200
-
-
-def _fal_http_json(url: str, method: str = "GET", payload: dict[str, Any] | None = None, timeout: int = 20) -> dict[str, Any]:
-    """Call fal.ai's authenticated queue API from the server, never from browser code."""
-    if not FAL_KEY:
-        raise RuntimeError("FAL_API_KEY (or legacy FAL_KEY) is not configured in the hosting environment.")
-    body = json.dumps(payload).encode("utf-8") if payload is not None else None
-    req = urllib.request.Request(
-        url,
-        data=body,
-        headers={
-            "Authorization": f"Key {FAL_KEY}",
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-            "User-Agent": USER_AGENT,
-        },
-        method=method,
-    )
-    with urllib.request.urlopen(req, timeout=timeout) as response:
-        raw = response.read().decode("utf-8", errors="replace")
-        try:
-            data = json.loads(raw)
-        except json.JSONDecodeError as exc:
-            raise ValueError(f"fal.ai returned non-JSON response (HTTP {response.status}).") from exc
-        if not isinstance(data, dict):
-            raise ValueError("fal.ai returned an unexpected JSON response.")
-        return data
-
-
-def _fal_config_for_mode(mode: str) -> tuple[str, str, dict[str, Any]]:
-    """Return model endpoint, media type, and provider-specific input payload."""
-    prompt = ""  # replaced by caller after selecting the endpoint
-    if mode == "image":
-        endpoint = FAL_IMAGE_MODEL
-        media_type = "image"
-        payload = {"prompt": prompt, "num_images": 1, "aspect_ratio": "auto", "resolution": "1K", "output_format": "png"}
-    elif mode == "video-fast":
-        endpoint = FAL_VIDEO_FAST_MODEL
-        media_type = "video"
-        payload = {"prompt": prompt, "duration": 6, "resolution": "1080p", "aspect_ratio": "16:9", "fps": 25, "generate_audio": False}
-    else:
-        endpoint = FAL_VIDEO_MODEL
-        media_type = "video"
-        payload = {"prompt": prompt, "duration": "5", "generate_audio": False}
-    # These values come from deployment environment variables, but still validate them
-    # before using them in a URL path.
-    if not endpoint or not re.fullmatch(r"[A-Za-z0-9._/-]+", endpoint) or ".." in endpoint:
-        raise ValueError("Invalid fal.ai model endpoint configuration.")
-    return endpoint, media_type, payload
-
-
-def _start_fal_media_job(message: str, mode: str):
-    if not FAL_KEY:
-        return jsonify({
-            "reply": "Image and video generation need a fal.ai API key. Add FAL_API_KEY in the hosting environment, then redeploy. 🔑",
-            "error": True,
-        }), 200
-    try:
-        endpoint, media_type, payload = _fal_config_for_mode(mode)
-        payload["prompt"] = message
-        submit_url = "https://queue.fal.run/" + urllib.parse.quote(endpoint, safe="/")
-        submitted = _fal_http_json(submit_url, method="POST", payload=payload, timeout=20)
-        request_id = submitted.get("request_id") or submitted.get("requestId")
-        if not isinstance(request_id, str) or not request_id.strip():
-            return jsonify({
-                "reply": "fal.ai accepted no trackable job ID. Check the fal.ai API response and account access. ⚠️",
-                "error": True,
-            }), 200
-        return jsonify({
-            "media_pending": True,
-            "request_id": request_id,
-            "mode": mode,
-            "media_type": media_type,
-            "provider": "fal.ai",
-        }), 202
-    except Exception as exc:
-        return jsonify({"reply": _provider_error(exc, "fal.ai media API"), "error": True}), 200
-
-
-def _poll_fal_media_job(mode: str, request_id: str):
-    if not FAL_KEY:
-        return jsonify({"reply": "FAL_API_KEY is missing from the hosting environment. 🔑", "error": True}), 200
-    if not isinstance(request_id, str) or not re.fullmatch(r"[A-Za-z0-9_-]{8,160}", request_id):
-        return jsonify({"reply": "The media job ID is invalid. Please start a new generation. ⚠️", "error": True}), 400
-    if mode not in {"image", "video", "video-fast"}:
-        return jsonify({"reply": "Unknown media generation mode. ⚠️", "error": True}), 400
-    try:
-        endpoint, media_type, _ = _fal_config_for_mode(mode)
-        quoted_endpoint = urllib.parse.quote(endpoint, safe="/")
-        quoted_id = urllib.parse.quote(request_id, safe="")
-        status_url = f"https://queue.fal.run/{quoted_endpoint}/requests/{quoted_id}/status"
-        status_payload = _fal_http_json(status_url, method="GET", timeout=15)
-        status = str(status_payload.get("status", "")).upper()
-        if status == "COMPLETED":
-            result_url = f"https://queue.fal.run/{quoted_endpoint}/requests/{quoted_id}"
-            result = _fal_http_json(result_url, method="GET", timeout=20)
-            media_url = _find_media_url(result)
-            if not media_url:
-                return jsonify({"reply": "fal.ai marked the job complete but did not return a media URL. Check the provider result schema. ⚠️", "error": True}), 200
-            return _media_response(media_type, media_url, "fal.ai")
-        if status in {"FAILED", "ERROR", "CANCELLED"}:
-            detail = status_payload.get("error") or status_payload.get("detail") or "The provider failed to generate this media."
-            return jsonify({"reply": f"fal.ai generation failed ({status}): {str(detail)[:900]} ⚠️", "error": True}), 200
-        return jsonify({"media_pending": True, "queue_status": status or "IN_QUEUE", "provider": "fal.ai", "request_id": request_id, "mode": mode}), 200
-    except Exception as exc:
-        return jsonify({"reply": _provider_error(exc, "fal.ai media status"), "error": True}), 200
 
 def _openai_compatible_chat(api_url: str, api_key: str, model: str, history: list[dict[str, str]], message: str, system_prompt: str, timeout: int) -> str:
     messages: list[dict[str, str]] = [{"role": "system", "content": system_prompt}]
@@ -912,8 +745,10 @@ def health_check():
             "kira_fast": KIRA_FLASH_MODEL,
             "kira_pro": KIRA_PRO_MODEL,
             "cloudflare_image": CLOUDFLARE_IMAGE_MODEL,
-            "fal_video": FAL_VIDEO_MODEL,
-            "fal_video_fast": FAL_VIDEO_FAST_MODEL,
+            "veo_3_1_quality": APIPASS_VEO_QUALITY_MODEL,
+            "veo_3_1_fast": APIPASS_VEO_FAST_MODEL,
+            "video_resolution": APIPASS_VIDEO_RESOLUTION,
+            "video_duration_seconds": int(APIPASS_VIDEO_DURATION),
         },
         "features": {
             "chat": True,
@@ -922,9 +757,9 @@ def health_check():
             "groq_chat": bool(GROQ_API_KEY),
             "attachments": GENAI_AVAILABLE and bool(keys),
             "image_generation": bool(CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN),
-            "video_generation": bool(JSON2VIDEO_API_KEY and CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN) or bool(FAL_KEY and ENABLE_FAL_VIDEO),
-            "video_generation_fast": bool(JSON2VIDEO_API_KEY and CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN) or bool(FAL_KEY and ENABLE_FAL_VIDEO),
-            "json2video_configured": bool(JSON2VIDEO_API_KEY),
+            "video_generation": bool(APIPASS_API_KEY),
+            "video_generation_fast": bool(APIPASS_API_KEY),
+            "apipass_configured": bool(APIPASS_API_KEY),
             "kira_pro_chat": bool(os.environ.get("KIRA_PRO_API_KEY")),
         },
     }), 200
@@ -942,9 +777,9 @@ def media_status():
     mode = body.get("mode", "image")
     request_id = body.get("request_id", "")
     provider = str(body.get("provider", "")).strip().lower()
-    if provider in {"json2video", "json2video api"}:
-        return _poll_json2video_clip(request_id)
-    return _poll_fal_media_job(mode, request_id)
+    if provider in {"apipass", "api pass"}:
+        return _poll_apipass_video(request_id)
+    return jsonify({"reply": "Unknown media provider. Start a new generation with the current Beast AI version. ⚠️", "error": True}), 400
 
 
 @app.route("/api/chat", methods=["POST"])
@@ -986,16 +821,8 @@ def chat():
         if mode in {"video", "video-fast"}:
             if not message:
                 return jsonify({"reply": "Describe the video clip you want to create. 🎬"}), 200
-            # Prefer JSON2Video when configured: it renders a short animated still
-            # clip from Cloudflare-generated key art. Use fal only when explicitly enabled.
-            if JSON2VIDEO_API_KEY:
-                return _start_json2video_clip(message, mode)
-            if ENABLE_FAL_VIDEO and FAL_KEY:
-                return _start_fal_media_job(message, mode)
-            return jsonify({
-                "reply": "No video provider is configured. For the free animated-still workflow, add JSON2VIDEO_API_KEY and keep Cloudflare image-generation credentials configured. JSON2Video renders clips from images/text; it is not a prompt-to-video AI model. 🎬",
-                "error": True,
-            }), 200
+            # Use API Pass only for native Google Veo 3.1 video generation.
+            return _start_apipass_video(message, mode)
 
         ist = timezone(timedelta(hours=5, minutes=30))
         live_time = datetime.now(ist).strftime("%A, %d %B %Y, %I:%M %p IST")
