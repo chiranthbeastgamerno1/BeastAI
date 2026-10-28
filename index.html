@@ -252,11 +252,11 @@
                         </button>
                         <button onclick="setGenMode('video'); toggleAttachDropdown(event);" class="w-full text-left px-3 py-2.5 hover:bg-black/5 dark:hover:bg-white/5 rounded-xl transition-colors flex items-center gap-3">
                             <i data-lucide="video" class="w-4 h-4 text-zinc-700 dark:text-zinc-300"></i>
-                            <span class="text-[14px] font-semibold text-zinc-900 dark:text-white">Video Generation</span>
+                            <span class="text-[14px] font-semibold text-zinc-900 dark:text-white">Video Generation · Veo 3.1 1080p</span>
                         </button>
                         <button onclick="setGenMode('video-fast'); toggleAttachDropdown(event);" class="w-full text-left px-3 py-2.5 hover:bg-black/5 dark:hover:bg-white/5 rounded-xl transition-colors flex items-center gap-3">
                             <i data-lucide="zap" class="w-4 h-4 text-zinc-700 dark:text-zinc-300"></i>
-                            <span class="text-[14px] font-semibold text-zinc-900 dark:text-white">Video Generation - Fast</span>
+                            <span class="text-[14px] font-semibold text-zinc-900 dark:text-white">Video Generation · Veo 3.1 Fast 1080p</span>
                         </button>
                     </div>
                 </div>
@@ -338,11 +338,11 @@
         async function waitForMediaJob(initialData, msgId) {
             let job = initialData;
             const provider = String(job.provider || '');
-            const maxAttempts = provider === 'JSON2Video' ? 60 : 45;
+            const maxAttempts = String(provider).toLowerCase() === 'apipass' ? 120 : 45;
             for (let attempt = 0; attempt < maxAttempts; attempt++) {
                 const loader = document.getElementById(`loader-${msgId}`);
                 if (loader) {
-                    const statusText = job.reply || (provider === 'JSON2Video' ? 'Rendering your video… 🎬' : 'Generating media…');
+                    const statusText = job.reply || (String(provider).toLowerCase() === 'apipass' ? 'Generating Google Veo 3.1 video at 1080p… 🎬' : 'Generating media…');
                     loader.innerHTML = `<div class="text-sm text-zinc-500 dark:text-zinc-400 py-2">${escapeHTML(statusText)}</div><div class="jumping-dots text-zinc-500 dark:text-zinc-400 py-1"><span></span><span></span><span></span></div>`;
                 }
                 await new Promise(resolve => setTimeout(resolve, 4000));
@@ -365,7 +365,7 @@
                 if (!response.ok && !job.reply) job.reply = `Media status request failed (HTTP ${response.status}). ⚠️`;
                 if (!job.media_pending) return job;
             }
-            return { reply: 'This video is still rendering. Please wait a little longer and check your JSON2Video dashboard if it does not appear. ⏳', error: true };
+            return { reply: 'Your Veo 3.1 video is still processing. It can take several minutes; start a new request only if this task ultimately fails. ⏳', error: true };
         }
 
         function renderMarkdown(text) {
